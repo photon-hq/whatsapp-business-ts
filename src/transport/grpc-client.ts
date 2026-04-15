@@ -53,7 +53,9 @@ export interface GrpcClients {
 // Options
 // ---------------------------------------------------------------------------
 
-const SERVER_ADDRESS = "whatsapp-business-grpc.spectrum.photon.codes:443";
+const SERVER_ADDRESS =
+  process.env.WHATSAPP_BUSINESS_ENDPOINT ??
+  "whatsapp-business-grpc.spectrum.photon.codes:443";
 
 export interface GrpcClientOptions {
   /** Credentials for the WhatsApp Business API. */
