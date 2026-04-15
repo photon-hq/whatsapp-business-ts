@@ -7,51 +7,28 @@
 
 import type {
   ContactCard as ProtoContactCard,
-  ContactName as ProtoContactName,
-  ContactPhone as ProtoContactPhone,
-  ContactEmail as ProtoContactEmail,
-  ContactAddress as ProtoContactAddress,
-  ContactOrg as ProtoContactOrg,
-  ContactUrl as ProtoContactUrl,
   Event as ProtoEvent,
   InboundMessage as ProtoInboundMessage,
-  InteractiveContent as ProtoInteractiveContent,
-  InteractiveHeader as ProtoInteractiveHeader,
   InteractiveAction as ProtoInteractiveAction,
   InteractiveButton as ProtoInteractiveButton,
-  InteractiveSection as ProtoInteractiveSection,
+  InteractiveContent as ProtoInteractiveContent,
   InteractiveFlowParameters as ProtoInteractiveFlowParameters,
+  InteractiveHeader as ProtoInteractiveHeader,
+  InteractiveSection as ProtoInteractiveSection,
   MediaContent as ProtoMediaContent,
   SendMessageRequest as ProtoSendMessageRequest,
   StatusUpdate as ProtoStatusUpdate,
   SubscribeEventsResponse as ProtoSubscribeEventsResponse,
-  TemplateContent as ProtoTemplateContent,
-  TemplateComponent as ProtoTemplateComponent,
   TemplateCard as ProtoTemplateCard,
+  TemplateComponent as ProtoTemplateComponent,
+  TemplateContent as ProtoTemplateContent,
   TemplateParameter as ProtoTemplateParameter,
 } from "../generated/photon/whatsapp/v1/message_service.ts";
 import { MessageStatus as ProtoMessageStatus } from "../generated/photon/whatsapp/v1/message_service.ts";
 import type {
   ContactCard,
-  ContactName,
-  ContactPhone,
-  ContactEmail,
-  ContactAddress,
-  ContactOrg,
-  ContactUrl,
-  Conversation,
-  InboundButton,
   InboundInteractive,
   InboundMedia,
-  InboundSticker,
-  Location,
-  MessageContext,
-  Order,
-  OrderProductItem,
-  Pricing,
-  Reaction,
-  Referral,
-  SystemMessage,
   WhatsAppApiError,
 } from "../types/common.ts";
 import type {
@@ -82,7 +59,7 @@ import type {
 // ---------------------------------------------------------------------------
 
 export function mapSendParams(
-  params: SendMessageParams,
+  params: SendMessageParams
 ): ProtoSendMessageRequest {
   const base: Partial<ProtoSendMessageRequest> = {
     to: params.to,
@@ -103,16 +80,28 @@ export function mapSendParams(
   }
 
   if ("image" in params) {
-    return { ...base, image: mapMediaInput(params.image) } as ProtoSendMessageRequest;
+    return {
+      ...base,
+      image: mapMediaInput(params.image),
+    } as ProtoSendMessageRequest;
   }
   if ("video" in params) {
-    return { ...base, video: mapMediaInput(params.video) } as ProtoSendMessageRequest;
+    return {
+      ...base,
+      video: mapMediaInput(params.video),
+    } as ProtoSendMessageRequest;
   }
   if ("audio" in params) {
-    return { ...base, audio: mapMediaInput(params.audio) } as ProtoSendMessageRequest;
+    return {
+      ...base,
+      audio: mapMediaInput(params.audio),
+    } as ProtoSendMessageRequest;
   }
   if ("document" in params) {
-    return { ...base, document: mapMediaInput(params.document) } as ProtoSendMessageRequest;
+    return {
+      ...base,
+      document: mapMediaInput(params.document),
+    } as ProtoSendMessageRequest;
   }
   if ("sticker" in params) {
     return {
@@ -172,9 +161,7 @@ function mapMediaInput(input: MediaInput): ProtoMediaContent {
   };
 }
 
-function mapInteractiveInput(
-  input: InteractiveInput,
-): ProtoInteractiveContent {
+function mapInteractiveInput(input: InteractiveInput): ProtoInteractiveContent {
   return {
     type: input.type,
     header: input.header ? mapInteractiveHeaderInput(input.header) : undefined,
@@ -185,7 +172,7 @@ function mapInteractiveInput(
 }
 
 function mapInteractiveHeaderInput(
-  input: InteractiveHeaderInput,
+  input: InteractiveHeaderInput
 ): ProtoInteractiveHeader {
   return {
     type: input.type,
@@ -197,7 +184,7 @@ function mapInteractiveHeaderInput(
 }
 
 function mapInteractiveActionInput(
-  input: InteractiveActionInput,
+  input: InteractiveActionInput
 ): ProtoInteractiveAction {
   return {
     buttons: input.buttons?.map(mapInteractiveButtonInput) ?? [],
@@ -213,7 +200,7 @@ function mapInteractiveActionInput(
 }
 
 function mapInteractiveButtonInput(
-  input: InteractiveButtonInput,
+  input: InteractiveButtonInput
 ): ProtoInteractiveButton {
   return {
     type: input.type,
@@ -222,7 +209,7 @@ function mapInteractiveButtonInput(
 }
 
 function mapInteractiveSectionInput(
-  input: InteractiveSectionInput,
+  input: InteractiveSectionInput
 ): ProtoInteractiveSection {
   return {
     title: input.title,
@@ -240,7 +227,7 @@ function mapInteractiveSectionInput(
 }
 
 function mapFlowParametersInput(
-  input: InteractiveFlowParametersInput,
+  input: InteractiveFlowParametersInput
 ): ProtoInteractiveFlowParameters {
   return {
     flowMessageVersion: input.flowMessageVersion,
@@ -261,7 +248,7 @@ function mapTemplateInput(input: TemplateInput): ProtoTemplateContent {
 }
 
 function mapTemplateComponentInput(
-  input: TemplateComponentInput,
+  input: TemplateComponentInput
 ): ProtoTemplateComponent {
   return {
     type: input.type,
@@ -280,14 +267,31 @@ function mapTemplateCardInput(input: TemplateCardInput): ProtoTemplateCard {
 }
 
 function mapTemplateParameterInput(
-  input: TemplateParameterInput,
+  input: TemplateParameterInput
 ): ProtoTemplateParameter {
   const base: Partial<ProtoTemplateParameter> = { type: input.type };
 
-  if (input.text !== undefined) return { ...base, text: input.text } as ProtoTemplateParameter;
-  if (input.image) return { ...base, image: mapMediaInput(input.image) } as ProtoTemplateParameter;
-  if (input.video) return { ...base, video: mapMediaInput(input.video) } as ProtoTemplateParameter;
-  if (input.document) return { ...base, document: mapMediaInput(input.document) } as ProtoTemplateParameter;
+  if (input.text !== undefined) {
+    return { ...base, text: input.text } as ProtoTemplateParameter;
+  }
+  if (input.image) {
+    return {
+      ...base,
+      image: mapMediaInput(input.image),
+    } as ProtoTemplateParameter;
+  }
+  if (input.video) {
+    return {
+      ...base,
+      video: mapMediaInput(input.video),
+    } as ProtoTemplateParameter;
+  }
+  if (input.document) {
+    return {
+      ...base,
+      document: mapMediaInput(input.document),
+    } as ProtoTemplateParameter;
+  }
   if (input.location) {
     return {
       ...base,
@@ -299,9 +303,15 @@ function mapTemplateParameterInput(
       },
     } as ProtoTemplateParameter;
   }
-  if (input.payload !== undefined) return { ...base, payload: input.payload } as ProtoTemplateParameter;
-  if (input.couponCode !== undefined) return { ...base, couponCode: input.couponCode } as ProtoTemplateParameter;
-  if (input.actionJson !== undefined) return { ...base, actionJson: input.actionJson } as ProtoTemplateParameter;
+  if (input.payload !== undefined) {
+    return { ...base, payload: input.payload } as ProtoTemplateParameter;
+  }
+  if (input.couponCode !== undefined) {
+    return { ...base, couponCode: input.couponCode } as ProtoTemplateParameter;
+  }
+  if (input.actionJson !== undefined) {
+    return { ...base, actionJson: input.actionJson } as ProtoTemplateParameter;
+  }
 
   return base as ProtoTemplateParameter;
 }
@@ -348,7 +358,7 @@ function mapContactCardInput(input: ContactCardInput): ProtoContactCard {
 // ---------------------------------------------------------------------------
 
 export function mapEvent(
-  proto: ProtoSubscribeEventsResponse,
+  proto: ProtoSubscribeEventsResponse
 ): WhatsAppEvent | null {
   const cursor = proto.cursor?.value ?? "";
 
@@ -394,9 +404,7 @@ export function mapMissedEvent(proto: ProtoEvent): WhatsAppEvent | null {
   return null;
 }
 
-export function mapInboundMessage(
-  proto: ProtoInboundMessage,
-): InboundMessage {
+export function mapInboundMessage(proto: ProtoInboundMessage): InboundMessage {
   return {
     id: proto.id,
     from: proto.from,
@@ -439,31 +447,35 @@ function mapInboundContent(proto: ProtoInboundMessage): InboundContent {
     case "text":
       return { type: "text", body: proto.text?.body ?? "" };
     case "image":
+      // biome-ignore lint/style/noNonNullAssertion: narrowed by switch on proto.type
       return { type: "image", media: mapInboundMedia(proto.image!) };
     case "video":
+      // biome-ignore lint/style/noNonNullAssertion: narrowed by switch on proto.type
       return { type: "video", media: mapInboundMedia(proto.video!) };
     case "audio":
+      // biome-ignore lint/style/noNonNullAssertion: narrowed by switch on proto.type
       return { type: "audio", media: mapInboundMedia(proto.audio!) };
     case "document":
+      // biome-ignore lint/style/noNonNullAssertion: narrowed by switch on proto.type
       return { type: "document", media: mapInboundMedia(proto.document!) };
     case "sticker":
       return {
         type: "sticker",
         sticker: {
-          id: proto.sticker!.id,
-          mimeType: proto.sticker!.mimeType,
-          sha256: proto.sticker!.sha256,
-          animated: proto.sticker!.animated,
+          id: proto.sticker?.id ?? "",
+          mimeType: proto.sticker?.mimeType ?? "",
+          sha256: proto.sticker?.sha256,
+          animated: proto.sticker?.animated,
         },
       };
     case "location":
       return {
         type: "location",
         location: {
-          latitude: proto.location!.latitude,
-          longitude: proto.location!.longitude,
-          name: proto.location!.name,
-          address: proto.location!.address,
+          latitude: proto.location?.latitude ?? 0,
+          longitude: proto.location?.longitude ?? 0,
+          name: proto.location?.name,
+          address: proto.location?.address,
         },
       };
     case "contacts":
@@ -475,45 +487,46 @@ function mapInboundContent(proto: ProtoInboundMessage): InboundContent {
       return {
         type: "reaction",
         reaction: {
-          messageId: proto.reaction!.messageId,
-          emoji: proto.reaction!.emoji,
+          messageId: proto.reaction?.messageId ?? "",
+          emoji: proto.reaction?.emoji ?? "",
         },
       };
     case "interactive":
       return {
         type: "interactive",
+        // biome-ignore lint/style/noNonNullAssertion: narrowed by switch on proto.type
         interactive: mapInboundInteractive(proto.interactive!),
       };
     case "button":
       return {
         type: "button",
         button: {
-          text: proto.button!.text,
-          payload: proto.button!.payload,
+          text: proto.button?.text ?? "",
+          payload: proto.button?.payload ?? "",
         },
       };
     case "order":
       return {
         type: "order",
         order: {
-          catalogId: proto.order!.catalogId,
-          productItems: proto.order!.productItems.map((p) => ({
+          catalogId: proto.order?.catalogId ?? "",
+          productItems: proto.order?.productItems.map((p) => ({
             productRetailerId: p.productRetailerId,
             quantity: p.quantity,
             itemPrice: p.itemPrice,
             currency: p.currency,
-          })),
-          text: proto.order!.text,
+          })) ?? [],
+          text: proto.order?.text,
         },
       };
     case "system":
       return {
         type: "system",
         system: {
-          body: proto.system!.body,
-          type: proto.system!.type,
-          newWaId: proto.system!.newWaId,
-          waId: proto.system!.waId,
+          body: proto.system?.body ?? "",
+          type: proto.system?.type ?? "",
+          newWaId: proto.system?.newWaId,
+          waId: proto.system?.waId,
         },
       };
     default:
@@ -521,16 +534,14 @@ function mapInboundContent(proto: ProtoInboundMessage): InboundContent {
   }
 }
 
-function mapInboundMedia(
-  proto: {
-    id: string;
-    mimeType: string;
-    sha256?: string;
-    caption?: string;
-    filename?: string;
-    voice?: boolean;
-  },
-): InboundMedia {
+function mapInboundMedia(proto: {
+  id: string;
+  mimeType: string;
+  sha256?: string;
+  caption?: string;
+  filename?: string;
+  voice?: boolean;
+}): InboundMedia {
   return {
     id: proto.id,
     mimeType: proto.mimeType,
@@ -541,9 +552,12 @@ function mapInboundMedia(
   };
 }
 
-function mapInboundInteractive(
-  proto: { type: string; buttonReply?: { id: string; title: string }; listReply?: { id: string; title: string; description?: string }; nfmReply?: { name?: string; body?: string; responseJson: string } },
-): InboundInteractive {
+function mapInboundInteractive(proto: {
+  type: string;
+  buttonReply?: { id: string; title: string };
+  listReply?: { id: string; title: string; description?: string };
+  nfmReply?: { name?: string; body?: string; responseJson: string };
+}): InboundInteractive {
   if (proto.buttonReply) {
     return {
       type: "button_reply",
@@ -657,7 +671,13 @@ function mapMessageStatus(proto: ProtoMessageStatus): MessageStatus {
   }
 }
 
-function mapApiError(proto: { code: number; title: string; message?: string; details?: string; href?: string }): WhatsAppApiError {
+function mapApiError(proto: {
+  code: number;
+  title: string;
+  message?: string;
+  details?: string;
+  href?: string;
+}): WhatsAppApiError {
   return {
     code: proto.code,
     title: proto.title,

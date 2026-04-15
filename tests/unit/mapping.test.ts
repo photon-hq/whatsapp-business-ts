@@ -1,6 +1,11 @@
 import { describe, expect, it } from "bun:test";
 import { MessageStatus } from "../../src/generated/photon/whatsapp/v1/message_service.ts";
-import { mapEvent, mapInboundMessage, mapMissedEvent, mapSendParams } from "../../src/transport/mapper.ts";
+import {
+  mapEvent,
+  mapInboundMessage,
+  mapMissedEvent,
+  mapSendParams,
+} from "../../src/transport/mapper.ts";
 import type { SendMessageParams } from "../../src/types/messages.ts";
 
 describe("mapSendParams", () => {
@@ -17,7 +22,10 @@ describe("mapSendParams", () => {
       text: { body: "https://example.com", previewUrl: true },
     };
     const result = mapSendParams(params);
-    expect(result.text).toEqual({ body: "https://example.com", previewUrl: true });
+    expect(result.text).toEqual({
+      body: "https://example.com",
+      previewUrl: true,
+    });
   });
 
   it("maps image with link", () => {
@@ -36,12 +44,18 @@ describe("mapSendParams", () => {
   });
 
   it("maps audio", () => {
-    const result = mapSendParams({ to: "+1", audio: { link: "https://a.mp3" } });
+    const result = mapSendParams({
+      to: "+1",
+      audio: { link: "https://a.mp3" },
+    });
     expect(result.audio?.link).toBe("https://a.mp3");
   });
 
   it("maps document", () => {
-    const result = mapSendParams({ to: "+1", document: { id: "doc1", filename: "invoice.pdf" } });
+    const result = mapSendParams({
+      to: "+1",
+      document: { id: "doc1", filename: "invoice.pdf" },
+    });
     expect(result.document?.id).toBe("doc1");
     expect(result.document?.filename).toBe("invoice.pdf");
   });

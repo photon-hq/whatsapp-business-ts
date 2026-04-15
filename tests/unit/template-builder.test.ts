@@ -20,7 +20,9 @@ describe("template builder", () => {
   });
 
   it("adds header component", () => {
-    const t = template("order", "en").header(image({ link: "https://img.com/photo.jpg" }));
+    const t = template("order", "en").header(
+      image({ link: "https://img.com/photo.jpg" })
+    );
     expect(t.components.length).toBe(1);
     expect(t.components[0]?.type).toBe("header");
     expect(t.components[0]?.parameters?.[0]?.type).toBe("image");
@@ -42,7 +44,10 @@ describe("template builder", () => {
   });
 
   it("adds url button component", () => {
-    const t = template("track", "en").urlButton(0, text("https://track.com/123"));
+    const t = template("track", "en").urlButton(
+      0,
+      text("https://track.com/123")
+    );
     expect(t.components[0]?.subType).toBe("url");
   });
 

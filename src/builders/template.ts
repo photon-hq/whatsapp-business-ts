@@ -65,7 +65,7 @@ export class TemplateBuilder implements TemplateInput {
   constructor(
     name: string,
     languageCode: string,
-    components: readonly TemplateComponentInput[] = [],
+    components: readonly TemplateComponentInput[] = []
   ) {
     this.name = name;
     this.languageCode = languageCode;
@@ -114,9 +114,6 @@ export class TemplateBuilder implements TemplateInput {
   }
 }
 
-export function template(
-  name: string,
-  languageCode: string,
-): TemplateBuilder {
+export function template(name: string, languageCode: string): TemplateBuilder {
   return new TemplateBuilder(name, languageCode);
 }

@@ -8,10 +8,10 @@ import { createGrpcClients } from "./transport/grpc-client.ts";
 import type { ClientOptions } from "./types/client.ts";
 
 export interface WhatsAppClient extends AsyncDisposable {
-  readonly messages: MessagesResource;
-  readonly media: MediaResource;
-  readonly events: EventsResource;
   close(): Promise<void>;
+  readonly events: EventsResource;
+  readonly media: MediaResource;
+  readonly messages: MessagesResource;
 }
 
 export function createClient(options: ClientOptions): WhatsAppClient {

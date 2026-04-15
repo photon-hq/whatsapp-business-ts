@@ -1,7 +1,7 @@
 export interface UploadOptions {
   readonly file: Buffer | Uint8Array;
-  readonly mimeType: string;
   readonly filename?: string;
+  readonly mimeType: string;
 }
 
 export interface UploadResult {
@@ -9,8 +9,8 @@ export interface UploadResult {
 }
 
 export interface MediaUrlResult {
-  readonly url: string;
-  readonly mimeType: string;
   readonly fileSize: number;
+  readonly mimeType: string;
   readonly sha256: string;
+  readonly url: string;
 }

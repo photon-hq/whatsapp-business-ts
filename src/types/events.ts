@@ -20,12 +20,7 @@ import type {
 // Message status (string literal union, mapped from proto enum)
 // ---------------------------------------------------------------------------
 
-export type MessageStatus =
-  | "sent"
-  | "delivered"
-  | "read"
-  | "played"
-  | "failed";
+export type MessageStatus = "sent" | "delivered" | "read" | "played" | "failed";
 
 // ---------------------------------------------------------------------------
 // Top-level event discriminated union
@@ -34,15 +29,15 @@ export type MessageStatus =
 export type WhatsAppEvent = InboundMessageEvent | StatusUpdateEvent;
 
 export interface InboundMessageEvent {
-  readonly type: "message";
   readonly cursor: string;
   readonly message: InboundMessage;
+  readonly type: "message";
 }
 
 export interface StatusUpdateEvent {
-  readonly type: "status";
   readonly cursor: string;
   readonly status: StatusUpdate;
+  readonly type: "status";
 }
 
 // ---------------------------------------------------------------------------
@@ -50,15 +45,15 @@ export interface StatusUpdateEvent {
 // ---------------------------------------------------------------------------
 
 export interface InboundMessage {
-  readonly id: string;
-  readonly from: string;
-  readonly timestamp: Date;
-  readonly messageType: string;
   readonly contact?: Contact;
   readonly content: InboundContent;
   readonly context?: MessageContext;
-  readonly referral?: Referral;
   readonly errors: readonly WhatsAppApiError[];
+  readonly from: string;
+  readonly id: string;
+  readonly messageType: string;
+  readonly referral?: Referral;
+  readonly timestamp: Date;
 }
 
 // ---------------------------------------------------------------------------
@@ -86,12 +81,12 @@ export type InboundContent =
 // ---------------------------------------------------------------------------
 
 export interface StatusUpdate {
+  readonly bizOpaqueCallbackData?: string;
+  readonly conversation?: Conversation;
+  readonly errors: readonly WhatsAppApiError[];
   readonly id: string;
+  readonly pricing?: Pricing;
+  readonly recipientId: string;
   readonly status: MessageStatus;
   readonly timestamp: Date;
-  readonly recipientId: string;
-  readonly conversation?: Conversation;
-  readonly pricing?: Pricing;
-  readonly errors: readonly WhatsAppApiError[];
-  readonly bizOpaqueCallbackData?: string;
 }

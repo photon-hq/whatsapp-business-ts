@@ -1,8 +1,4 @@
-import type {
-  ContactCard,
-  Location,
-  Reaction,
-} from "./common.ts";
+import type { ContactCard, Location, Reaction } from "./common.ts";
 
 // ---------------------------------------------------------------------------
 // Outbound content sub-types
@@ -14,10 +10,10 @@ export interface TextInput {
 }
 
 export interface MediaInput {
-  readonly id?: string;
-  readonly link?: string;
   readonly caption?: string;
   readonly filename?: string;
+  readonly id?: string;
+  readonly link?: string;
   readonly mimeType?: string;
 }
 
@@ -32,55 +28,55 @@ export type ReactionInput = Reaction;
 // ---------------------------------------------------------------------------
 
 export interface InteractiveInput {
-  readonly type: string;
-  readonly header?: InteractiveHeaderInput;
+  readonly action?: InteractiveActionInput;
   readonly body?: string;
   readonly footer?: string;
-  readonly action?: InteractiveActionInput;
+  readonly header?: InteractiveHeaderInput;
+  readonly type: string;
 }
 
 export interface InteractiveHeaderInput {
-  readonly type: string;
-  readonly text?: string;
-  readonly image?: MediaInput;
-  readonly video?: MediaInput;
   readonly document?: MediaInput;
+  readonly image?: MediaInput;
+  readonly text?: string;
+  readonly type: string;
+  readonly video?: MediaInput;
 }
 
 export interface InteractiveActionInput {
-  readonly buttons?: readonly InteractiveButtonInput[];
   readonly button?: string;
-  readonly sections?: readonly InteractiveSectionInput[];
+  readonly buttons?: readonly InteractiveButtonInput[];
   readonly catalogId?: string;
-  readonly productRetailerId?: string;
   readonly name?: string;
   readonly parameters?: InteractiveFlowParametersInput;
+  readonly productRetailerId?: string;
+  readonly sections?: readonly InteractiveSectionInput[];
 }
 
 export interface InteractiveButtonInput {
-  readonly type: string;
   readonly reply: { readonly id: string; readonly title: string };
+  readonly type: string;
 }
 
 export interface InteractiveSectionInput {
-  readonly title?: string;
-  readonly rows?: readonly InteractiveSectionRowInput[];
   readonly productItems?: readonly { readonly productRetailerId: string }[];
+  readonly rows?: readonly InteractiveSectionRowInput[];
+  readonly title?: string;
 }
 
 export interface InteractiveSectionRowInput {
+  readonly description?: string;
   readonly id: string;
   readonly title: string;
-  readonly description?: string;
 }
 
 export interface InteractiveFlowParametersInput {
-  readonly flowMessageVersion: string;
-  readonly flowToken: string;
-  readonly flowId: string;
-  readonly flowCta: string;
   readonly flowAction?: string;
   readonly flowActionPayloadJson?: string;
+  readonly flowCta: string;
+  readonly flowId: string;
+  readonly flowMessageVersion: string;
+  readonly flowToken: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -88,17 +84,17 @@ export interface InteractiveFlowParametersInput {
 // ---------------------------------------------------------------------------
 
 export interface TemplateInput {
-  readonly name: string;
-  readonly languageCode: string;
   readonly components?: readonly TemplateComponentInput[];
+  readonly languageCode: string;
+  readonly name: string;
 }
 
 export interface TemplateComponentInput {
-  readonly type: string;
+  readonly cards?: readonly TemplateCardInput[];
+  readonly index?: number;
   readonly parameters?: readonly TemplateParameterInput[];
   readonly subType?: string;
-  readonly index?: number;
-  readonly cards?: readonly TemplateCardInput[];
+  readonly type: string;
 }
 
 export interface TemplateCardInput {
@@ -107,15 +103,15 @@ export interface TemplateCardInput {
 }
 
 export interface TemplateParameterInput {
-  readonly type: string;
-  readonly text?: string;
-  readonly image?: MediaInput;
-  readonly video?: MediaInput;
+  readonly actionJson?: string;
+  readonly couponCode?: string;
   readonly document?: MediaInput;
+  readonly image?: MediaInput;
   readonly location?: LocationInput;
   readonly payload?: string;
-  readonly couponCode?: string;
-  readonly actionJson?: string;
+  readonly text?: string;
+  readonly type: string;
+  readonly video?: MediaInput;
 }
 
 // ---------------------------------------------------------------------------

@@ -149,7 +149,7 @@ export class TypedEventStream<T> implements AsyncIterable<T>, AsyncDisposable {
       throw new Error(
         "TypedEventStream already has a consumer. " +
           "Each stream instance supports only one consumer. " +
-          "Use .filter() / .map() / .take() to derive a new stream before consuming.",
+          "Use .filter() / .map() / .take() to derive a new stream before consuming."
       );
     }
     this._consumed = true;

@@ -1,5 +1,8 @@
 import { describe, expect, it } from "bun:test";
-import { withReconnect, withResumableReconnect } from "../../src/streaming/reconnect.ts";
+import {
+  withReconnect,
+  withResumableReconnect,
+} from "../../src/streaming/reconnect.ts";
 
 describe("withReconnect", () => {
   it("yields items from the stream", async () => {
@@ -11,13 +14,15 @@ describe("withReconnect", () => {
           yield 3;
         },
       }),
-      { maxAttempts: 0 },
+      { maxAttempts: 0 }
     );
 
     const items: number[] = [];
     for await (const item of stream) {
       items.push(item);
-      if (items.length === 3) break;
+      if (items.length === 3) {
+        break;
+      }
     }
     expect(items).toEqual([1, 2, 3]);
   });
@@ -33,13 +38,15 @@ describe("withReconnect", () => {
           },
         };
       },
-      { initialDelay: 10, maxAttempts: 3 },
+      { initialDelay: 10, maxAttempts: 3 }
     );
 
     const items: number[] = [];
     for await (const item of stream) {
       items.push(item);
-      if (items.length >= 3) break;
+      if (items.length >= 3) {
+        break;
+      }
     }
     expect(items).toEqual([10, 20, 30]);
   });
@@ -78,13 +85,15 @@ describe("withResumableReconnect", () => {
         return [];
       },
       () => lastCursor,
-      { initialDelay: 10, maxAttempts: 2 },
+      { initialDelay: 10, maxAttempts: 2 }
     );
 
     const items: { value: number; cursor: string }[] = [];
     for await (const item of stream) {
       items.push(item);
-      if (items.length >= 4) break;
+      if (items.length >= 4) {
+        break;
+      }
     }
 
     expect(items.map((i) => i.value)).toEqual([1, 2, 3, 10]);

@@ -26,11 +26,11 @@ import { readMetadataValue } from "../utils/grpc-metadata.ts";
 import {
   AuthenticationError,
   ConnectionError,
-  WhatsAppError,
-  type WhatsAppErrorOptions,
   NotFoundError,
   RateLimitError,
   ValidationError,
+  WhatsAppError,
+  type WhatsAppErrorOptions,
 } from "./whatsapp-error.ts";
 
 // ---------------------------------------------------------------------------

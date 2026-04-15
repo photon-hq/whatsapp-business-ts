@@ -7,7 +7,7 @@
  */
 export function readMetadataValue(
   error: unknown,
-  key: string,
+  key: string
 ): string | undefined {
   const meta = (error as { metadata?: { get(key: string): unknown[] } })
     .metadata;
