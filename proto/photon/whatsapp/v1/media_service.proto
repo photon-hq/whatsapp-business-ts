@@ -1,0 +1,40 @@
+syntax = "proto3";
+package photon.whatsapp.v1;
+
+service MediaService {
+  // Upload media to Meta's servers. Returns a media ID for use in messages.
+  rpc Upload(MediaServiceUploadRequest) returns (MediaServiceUploadResponse);
+
+  // Get the download URL for a media ID. URL expires in 5 minutes.
+  rpc GetUrl(MediaServiceGetUrlRequest) returns (MediaServiceGetUrlResponse);
+
+  // Delete media from Meta's servers.
+  rpc Delete(MediaServiceDeleteRequest) returns (MediaServiceDeleteResponse);
+}
+
+message MediaServiceUploadRequest {
+  bytes file = 1;
+  string mime_type = 2;
+  optional string filename = 3;
+}
+
+message MediaServiceUploadResponse {
+  string media_id = 1;
+}
+
+message MediaServiceGetUrlRequest {
+  string media_id = 1;
+}
+
+message MediaServiceGetUrlResponse {
+  string url = 1;
+  string mime_type = 2;
+  int64 file_size = 3;
+  string sha256 = 4;
+}
+
+message MediaServiceDeleteRequest {
+  string media_id = 1;
+}
+
+message MediaServiceDeleteResponse {}

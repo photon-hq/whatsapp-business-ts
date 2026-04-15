@@ -1,17 +1,45 @@
 {
   "name": "@photon-ai/whatsapp-business",
-  "module": "src/index.ts",
+  "version": "0.1.0",
+  "description": "TypeScript SDK for WhatsApp Business API via Spectrum",
   "type": "module",
-  "devDependencies": {
-    "@biomejs/biome": "2.4.11",
-    "@types/bun": "latest",
-    "ultracite": "7.5.8"
+  "exports": {
+    ".": {
+      "bun": "./dist/index.js",
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
   },
-  "peerDependencies": {
-    "typescript": "^5"
+  "files": [
+    "dist",
+    "proto"
+  ],
+  "engines": {
+    "node": ">=18"
   },
   "scripts": {
-    "check": "ultracite check",
-    "fix": "ultracite fix"
+    "generate": "PATH=./node_modules/.bin:$PATH buf generate",
+    "build": "bun run generate && tsup",
+    "check": "tsc --noEmit",
+    "lint": "biome check .",
+    "lint:fix": "biome check --fix .",
+    "test": "bun test",
+    "prepublishOnly": "bun run build"
+  },
+  "dependencies": {
+    "@grpc/grpc-js": "^1.14.3",
+    "long": "^5.3.2",
+    "nice-grpc": "^2.1.15",
+    "nice-grpc-common": "^2.0.3",
+    "protobufjs": "^8.0.1"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.4.11",
+    "@bufbuild/buf": "^1.68.1",
+    "@types/bun": "latest",
+    "ts-proto": "^2.11.6",
+    "tsup": "^8.5.1",
+    "typescript": "^5.7.0",
+    "ultracite": "7.5.8"
   }
 }

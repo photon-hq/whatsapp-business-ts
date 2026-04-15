@@ -1,0 +1,27 @@
+syntax = "proto3";
+package photon.whatsapp.v1;
+
+// Keepalive signal for streaming RPCs.
+// Clients should silently discard these.
+message Heartbeat {}
+
+// Opaque cursor for resumable event streams.
+// Clients must treat the value as opaque and pass it back verbatim.
+message StreamCursor {
+  string value = 1;
+}
+
+// Contact information from webhook contacts array.
+message Contact {
+  string wa_id = 1;
+  optional string name = 2;
+}
+
+// Error detail from Meta's API or webhook.
+message Error {
+  int32 code = 1;
+  string title = 2;
+  optional string message = 3;
+  optional string details = 4;
+  optional string href = 5;
+}

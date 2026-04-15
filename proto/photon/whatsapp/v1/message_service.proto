@@ -1,0 +1,458 @@
+syntax = "proto3";
+package photon.whatsapp.v1;
+
+import "google/protobuf/timestamp.proto";
+import "photon/whatsapp/v1/common.proto";
+
+service MessageService {
+  // Send a message via Meta's WhatsApp Cloud API.
+  rpc SendMessage(SendMessageRequest) returns (SendMessageResponse);
+
+  // Mark a message as read. Also marks all earlier messages as read.
+  rpc MarkRead(MarkReadRequest) returns (MarkReadResponse);
+
+  // Server-streaming subscription for live inbound events.
+  // Does NOT replay missed events — use FetchMissedEvents for that.
+  rpc SubscribeEvents(SubscribeEventsRequest) returns (stream SubscribeEventsResponse);
+
+  // Fetch events missed while disconnected. Client calls this on reconnect
+  // with the cursor from their last received event.
+  rpc FetchMissedEvents(FetchMissedEventsRequest) returns (FetchMissedEventsResponse);
+}
+
+// ---------------------------------------------------------------------------
+// Send message
+// ---------------------------------------------------------------------------
+
+message SendMessageRequest {
+  string to = 1;
+
+  oneof content {
+    TextContent text = 10;
+    MediaContent image = 11;
+    MediaContent video = 12;
+    MediaContent audio = 13;
+    MediaContent document = 14;
+    MediaContent sticker = 15;
+    LocationContent location = 16;
+    ReactionContent reaction = 17;
+    InteractiveContent interactive = 18;
+    TemplateContent template = 19;
+  }
+
+  // For contacts message type (repeated, cannot be in oneof).
+  repeated ContactCard contacts = 20;
+
+  optional string reply_to_message_id = 30;
+  optional string biz_opaque_callback_data = 31;
+}
+
+message SendMessageResponse {
+  string message_id = 1;
+  string message_status = 2;
+}
+
+// ---------------------------------------------------------------------------
+// Mark read
+// ---------------------------------------------------------------------------
+
+message MarkReadRequest {
+  string message_id = 1;
+}
+
+message MarkReadResponse {}
+
+// ---------------------------------------------------------------------------
+// Subscribe (live events)
+// ---------------------------------------------------------------------------
+
+message SubscribeEventsRequest {}
+
+message SubscribeEventsResponse {
+  StreamCursor cursor = 1;
+
+  oneof payload {
+    InboundMessage message = 10;
+    StatusUpdate status = 11;
+    Heartbeat heartbeat = 99;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Fetch missed events
+// ---------------------------------------------------------------------------
+
+message FetchMissedEventsRequest {
+  StreamCursor cursor = 1;
+  optional int32 limit = 2;
+}
+
+message FetchMissedEventsResponse {
+  repeated Event events = 1;
+}
+
+message Event {
+  StreamCursor cursor = 1;
+
+  oneof payload {
+    InboundMessage message = 10;
+    StatusUpdate status = 11;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Inbound message (from webhook)
+// ---------------------------------------------------------------------------
+
+message InboundMessage {
+  string id = 1;
+  string from = 2;
+  google.protobuf.Timestamp timestamp = 3;
+  string type = 4;
+  Contact contact = 5;
+
+  // Content — one is populated based on type.
+  optional TextContent text = 10;
+  optional InboundMediaContent image = 11;
+  optional InboundMediaContent video = 12;
+  optional InboundMediaContent audio = 13;
+  optional InboundMediaContent document = 14;
+  optional InboundStickerContent sticker = 15;
+  optional LocationContent location = 16;
+  repeated ContactCard contacts = 17;
+  optional ReactionContent reaction = 18;
+  optional InboundInteractiveContent interactive = 19;
+  optional InboundButtonContent button = 20;
+  optional OrderContent order = 21;
+  optional SystemContent system = 22;
+
+  // Context (reply, forward, referral).
+  optional MessageContext context = 30;
+  optional Referral referral = 31;
+
+  // Errors attached to the message by Meta.
+  repeated Error errors = 40;
+}
+
+// ---------------------------------------------------------------------------
+// Status update (from webhook)
+// ---------------------------------------------------------------------------
+
+enum MessageStatus {
+  MESSAGE_STATUS_UNSPECIFIED = 0;
+  MESSAGE_STATUS_SENT = 1;
+  MESSAGE_STATUS_DELIVERED = 2;
+  MESSAGE_STATUS_READ = 3;
+  MESSAGE_STATUS_PLAYED = 4;
+  MESSAGE_STATUS_FAILED = 5;
+}
+
+message StatusUpdate {
+  string id = 1;
+  MessageStatus status = 2;
+  google.protobuf.Timestamp timestamp = 3;
+  string recipient_id = 4;
+
+  optional Conversation conversation = 10;
+  optional Pricing pricing = 11;
+  repeated Error errors = 12;
+  optional string biz_opaque_callback_data = 13;
+}
+
+message Conversation {
+  string id = 1;
+  string origin_type = 2;
+  optional google.protobuf.Timestamp expiration = 3;
+}
+
+message Pricing {
+  bool billable = 1;
+  string pricing_model = 2;
+  string type = 3;
+  string category = 4;
+}
+
+// ---------------------------------------------------------------------------
+// Content types — outbound (send)
+// ---------------------------------------------------------------------------
+
+message TextContent {
+  string body = 1;
+  optional bool preview_url = 2;
+}
+
+message MediaContent {
+  optional string id = 1;
+  optional string link = 2;
+  optional string caption = 3;
+  optional string filename = 4;
+  optional string mime_type = 5;
+}
+
+message LocationContent {
+  double latitude = 1;
+  double longitude = 2;
+  optional string name = 3;
+  optional string address = 4;
+}
+
+message ReactionContent {
+  string message_id = 1;
+  string emoji = 2;
+}
+
+message InteractiveContent {
+  string type = 1;
+  optional InteractiveHeader header = 2;
+  optional InteractiveBody body = 3;
+  optional InteractiveFooter footer = 4;
+  optional InteractiveAction action = 5;
+}
+
+message InteractiveHeader {
+  string type = 1;
+  optional string text = 2;
+  optional MediaContent image = 3;
+  optional MediaContent video = 4;
+  optional MediaContent document = 5;
+}
+
+message InteractiveBody {
+  string text = 1;
+}
+
+message InteractiveFooter {
+  string text = 1;
+}
+
+message InteractiveAction {
+  // For button type.
+  repeated InteractiveButton buttons = 1;
+  // For list type.
+  optional string button = 2;
+  repeated InteractiveSection sections = 3;
+  // For product type.
+  optional string catalog_id = 4;
+  optional string product_retailer_id = 5;
+  // For flow type.
+  optional string name = 6;
+  optional InteractiveFlowParameters parameters = 7;
+}
+
+message InteractiveButton {
+  string type = 1;
+  InteractiveButtonReply reply = 2;
+}
+
+message InteractiveButtonReply {
+  string id = 1;
+  string title = 2;
+}
+
+message InteractiveSection {
+  optional string title = 1;
+  repeated InteractiveSectionRow rows = 2;
+  // For product_list type.
+  repeated InteractiveProductItem product_items = 3;
+}
+
+message InteractiveSectionRow {
+  string id = 1;
+  string title = 2;
+  optional string description = 3;
+}
+
+message InteractiveProductItem {
+  string product_retailer_id = 1;
+}
+
+message InteractiveFlowParameters {
+  string flow_message_version = 1;
+  string flow_token = 2;
+  string flow_id = 3;
+  string flow_cta = 4;
+  optional string flow_action = 5;
+  optional string flow_action_payload_json = 6;
+}
+
+// Template message.
+message TemplateContent {
+  string name = 1;
+  string language_code = 2;
+  repeated TemplateComponent components = 3;
+}
+
+message TemplateComponent {
+  string type = 1;
+  repeated TemplateParameter parameters = 2;
+  // For button components.
+  optional string sub_type = 3;
+  optional int32 index = 4;
+  // For carousel.
+  repeated TemplateCard cards = 5;
+}
+
+message TemplateCard {
+  int32 card_index = 1;
+  repeated TemplateComponent components = 2;
+}
+
+message TemplateParameter {
+  string type = 1;
+
+  oneof value {
+    string text = 2;
+    MediaContent image = 3;
+    MediaContent video = 4;
+    MediaContent document = 5;
+    LocationContent location = 6;
+    string payload = 7;
+    string coupon_code = 8;
+    string action_json = 9;
+  }
+}
+
+// Contact card for outbound contacts message.
+message ContactCard {
+  ContactName name = 1;
+  repeated ContactPhone phones = 2;
+  repeated ContactEmail emails = 3;
+  repeated ContactAddress addresses = 4;
+  optional ContactOrg org = 5;
+  repeated ContactUrl urls = 6;
+  optional string birthday = 7;
+}
+
+message ContactName {
+  string formatted_name = 1;
+  optional string first_name = 2;
+  optional string last_name = 3;
+  optional string middle_name = 4;
+  optional string prefix = 5;
+  optional string suffix = 6;
+}
+
+message ContactPhone {
+  string phone = 1;
+  optional string type = 2;
+  optional string wa_id = 3;
+}
+
+message ContactEmail {
+  string email = 1;
+  optional string type = 2;
+}
+
+message ContactAddress {
+  optional string street = 1;
+  optional string city = 2;
+  optional string state = 3;
+  optional string zip = 4;
+  optional string country = 5;
+  optional string country_code = 6;
+  optional string type = 7;
+}
+
+message ContactOrg {
+  optional string company = 1;
+  optional string department = 2;
+  optional string title = 3;
+}
+
+message ContactUrl {
+  string url = 1;
+  optional string type = 2;
+}
+
+// ---------------------------------------------------------------------------
+// Content types — inbound (webhook-specific)
+// ---------------------------------------------------------------------------
+
+message InboundMediaContent {
+  string id = 1;
+  string mime_type = 2;
+  optional string sha256 = 3;
+  optional string caption = 4;
+  optional string filename = 5;
+  optional bool voice = 6;
+}
+
+message InboundStickerContent {
+  string id = 1;
+  string mime_type = 2;
+  optional string sha256 = 3;
+  optional bool animated = 4;
+}
+
+message InboundInteractiveContent {
+  string type = 1;
+
+  oneof reply {
+    InboundButtonReply button_reply = 2;
+    InboundListReply list_reply = 3;
+    InboundNfmReply nfm_reply = 4;
+  }
+}
+
+message InboundButtonReply {
+  string id = 1;
+  string title = 2;
+}
+
+message InboundListReply {
+  string id = 1;
+  string title = 2;
+  optional string description = 3;
+}
+
+message InboundNfmReply {
+  optional string name = 1;
+  optional string body = 2;
+  string response_json = 3;
+}
+
+message InboundButtonContent {
+  string text = 1;
+  string payload = 2;
+}
+
+message OrderContent {
+  string catalog_id = 1;
+  repeated OrderProductItem product_items = 2;
+  optional string text = 3;
+}
+
+message OrderProductItem {
+  string product_retailer_id = 1;
+  int32 quantity = 2;
+  double item_price = 3;
+  string currency = 4;
+}
+
+message SystemContent {
+  string body = 1;
+  string type = 2;
+  optional string new_wa_id = 3;
+  optional string wa_id = 4;
+}
+
+message MessageContext {
+  optional bool forwarded = 1;
+  optional bool frequently_forwarded = 2;
+  optional string from = 3;
+  optional string id = 4;
+  optional ReferredProduct referred_product = 5;
+}
+
+message ReferredProduct {
+  string catalog_id = 1;
+  string product_retailer_id = 2;
+}
+
+message Referral {
+  string source_url = 1;
+  string source_type = 2;
+  optional string source_id = 3;
+  optional string headline = 4;
+  optional string body = 5;
+}
