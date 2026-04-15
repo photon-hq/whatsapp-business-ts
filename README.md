@@ -34,6 +34,12 @@ for await (const event of stream) {
 await client.close();
 ```
 
+## Configuration
+
+| Environment variable | Description | Default |
+| --- | --- | --- |
+| `WHATSAPP_BUSINESS_ENDPOINT` | gRPC server address (host:port) | `whatsapp-business-grpc.spectrum.photon.codes:443` |
+
 ## Development
 
 ```bash
