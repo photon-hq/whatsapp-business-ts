@@ -38,7 +38,7 @@ export const DEFAULT_RETRY_OPTIONS = {
  * matching the server's expected format.
  */
 export function authMiddleware(
-  credentials: WhatsAppCredentials,
+  credentials: WhatsAppCredentials
 ): ClientMiddleware {
   return async function* authMw(call, options) {
     const metadata = Metadata(options.metadata);
@@ -70,7 +70,7 @@ export function authMiddleware(
 export function retryMiddleware(opts: RetryOptions = {}): ClientMiddleware {
   const maxAttempts = Math.max(
     1,
-    opts.maxAttempts ?? DEFAULT_RETRY_OPTIONS.maxAttempts,
+    opts.maxAttempts ?? DEFAULT_RETRY_OPTIONS.maxAttempts
   );
   const initialDelay = opts.initialDelay ?? DEFAULT_RETRY_OPTIONS.initialDelay;
   const maxDelay = opts.maxDelay ?? DEFAULT_RETRY_OPTIONS.maxDelay;

@@ -14,20 +14,24 @@ function makeClientError(code: number, details: string): ClientError {
   return new ClientError(
     "/photon.whatsapp.v1.MessageService/SendMessage",
     code,
-    details,
+    details
   );
 }
 
 describe("fromGrpcError", () => {
   it("maps UNAUTHENTICATED to AuthenticationError", () => {
-    const err = fromGrpcError(makeClientError(Status.UNAUTHENTICATED, "bad token"));
+    const err = fromGrpcError(
+      makeClientError(Status.UNAUTHENTICATED, "bad token")
+    );
     expect(err).toBeInstanceOf(AuthenticationError);
     expect(err.message).toBe("bad token");
     expect(err.grpcCode).toBe(Status.UNAUTHENTICATED);
   });
 
   it("maps PERMISSION_DENIED to AuthenticationError", () => {
-    const err = fromGrpcError(makeClientError(Status.PERMISSION_DENIED, "forbidden"));
+    const err = fromGrpcError(
+      makeClientError(Status.PERMISSION_DENIED, "forbidden")
+    );
     expect(err).toBeInstanceOf(AuthenticationError);
   });
 
@@ -37,27 +41,37 @@ describe("fromGrpcError", () => {
   });
 
   it("maps RESOURCE_EXHAUSTED to RateLimitError", () => {
-    const err = fromGrpcError(makeClientError(Status.RESOURCE_EXHAUSTED, "rate limited"));
+    const err = fromGrpcError(
+      makeClientError(Status.RESOURCE_EXHAUSTED, "rate limited")
+    );
     expect(err).toBeInstanceOf(RateLimitError);
   });
 
   it("maps INVALID_ARGUMENT to ValidationError", () => {
-    const err = fromGrpcError(makeClientError(Status.INVALID_ARGUMENT, "bad input"));
+    const err = fromGrpcError(
+      makeClientError(Status.INVALID_ARGUMENT, "bad input")
+    );
     expect(err).toBeInstanceOf(ValidationError);
   });
 
   it("maps FAILED_PRECONDITION to ValidationError", () => {
-    const err = fromGrpcError(makeClientError(Status.FAILED_PRECONDITION, "precondition"));
+    const err = fromGrpcError(
+      makeClientError(Status.FAILED_PRECONDITION, "precondition")
+    );
     expect(err).toBeInstanceOf(ValidationError);
   });
 
   it("maps UNAVAILABLE to ConnectionError", () => {
-    const err = fromGrpcError(makeClientError(Status.UNAVAILABLE, "unavailable"));
+    const err = fromGrpcError(
+      makeClientError(Status.UNAVAILABLE, "unavailable")
+    );
     expect(err).toBeInstanceOf(ConnectionError);
   });
 
   it("maps DEADLINE_EXCEEDED to ConnectionError", () => {
-    const err = fromGrpcError(makeClientError(Status.DEADLINE_EXCEEDED, "timeout"));
+    const err = fromGrpcError(
+      makeClientError(Status.DEADLINE_EXCEEDED, "timeout")
+    );
     expect(err).toBeInstanceOf(ConnectionError);
   });
 
@@ -90,7 +104,9 @@ describe("fromGrpcError", () => {
     Object.defineProperty(clientErr, "metadata", {
       value: {
         get(key: string) {
-          if (key === "x-retryable") return ["true"];
+          if (key === "x-retryable") {
+            return ["true"];
+          }
           return [];
         },
       },
@@ -104,7 +120,9 @@ describe("fromGrpcError", () => {
     Object.defineProperty(clientErr, "metadata", {
       value: {
         get(key: string) {
-          if (key === "error-code") return ["invalidArgument"];
+          if (key === "error-code") {
+            return ["invalidArgument"];
+          }
           return [];
         },
       },

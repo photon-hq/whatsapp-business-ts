@@ -16,13 +16,11 @@ export class MediaResource {
 
   async upload(
     params: UploadOptions,
-    options?: RequestOptions,
+    options?: RequestOptions
   ): Promise<UploadResult> {
     try {
       const file =
-        params.file instanceof Buffer
-          ? params.file
-          : Buffer.from(params.file);
+        params.file instanceof Buffer ? params.file : Buffer.from(params.file);
 
       const response = await this._client.upload(
         {
@@ -30,7 +28,7 @@ export class MediaResource {
           mimeType: params.mimeType,
           filename: params.filename,
         },
-        { signal: options?.signal },
+        { signal: options?.signal }
       );
       return { mediaId: response.mediaId };
     } catch (err) {
@@ -40,12 +38,12 @@ export class MediaResource {
 
   async getUrl(
     mediaId: string,
-    options?: RequestOptions,
+    options?: RequestOptions
   ): Promise<MediaUrlResult> {
     try {
       const response = await this._client.getUrl(
         { mediaId },
-        { signal: options?.signal },
+        { signal: options?.signal }
       );
       return {
         url: response.url,
@@ -58,10 +56,7 @@ export class MediaResource {
     }
   }
 
-  async delete(
-    mediaId: string,
-    options?: RequestOptions,
-  ): Promise<void> {
+  async delete(mediaId: string, options?: RequestOptions): Promise<void> {
     try {
       await this._client.delete({ mediaId }, { signal: options?.signal });
     } catch (err) {

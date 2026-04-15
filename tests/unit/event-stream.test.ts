@@ -71,7 +71,9 @@ describe("TypedEventStream", () => {
   it("throws on double consumption", () => {
     const stream = new TypedEventStream(createSource([1, 2, 3]));
     // First consumer
-    stream.on(() => {});
+    stream.on(() => {
+      /* noop */
+    });
     // Second consumer should throw
     expect(() => {
       stream[Symbol.asyncIterator]();
@@ -81,7 +83,11 @@ describe("TypedEventStream", () => {
   it("throws on consuming closed stream", async () => {
     const stream = new TypedEventStream(createSource([1, 2, 3]));
     await stream.close();
-    expect(() => stream.on(() => {})).toThrow("closed");
+    expect(() =>
+      stream.on(() => {
+        /* noop */
+      })
+    ).toThrow("closed");
   });
 
   it("supports chaining filter + map + take", async () => {

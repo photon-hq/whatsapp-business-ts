@@ -52,16 +52,16 @@ export interface FetchMissedResult {
 // ---------------------------------------------------------------------------
 
 export interface Contact {
-  readonly waId: string;
   readonly name?: string;
+  readonly waId: string;
 }
 
 export interface WhatsAppApiError {
   readonly code: number;
-  readonly title: string;
-  readonly message?: string;
   readonly details?: string;
   readonly href?: string;
+  readonly message?: string;
+  readonly title: string;
 }
 
 export interface MessageContext {
@@ -78,31 +78,31 @@ export interface ReferredProduct {
 }
 
 export interface Referral {
-  readonly sourceUrl: string;
-  readonly sourceType: string;
-  readonly sourceId?: string;
-  readonly headline?: string;
   readonly body?: string;
+  readonly headline?: string;
+  readonly sourceId?: string;
+  readonly sourceType: string;
+  readonly sourceUrl: string;
 }
 
 export interface Conversation {
+  readonly expiration?: Date;
   readonly id: string;
   readonly originType: string;
-  readonly expiration?: Date;
 }
 
 export interface Pricing {
   readonly billable: boolean;
+  readonly category: string;
   readonly pricingModel: string;
   readonly type: string;
-  readonly category: string;
 }
 
 export interface Location {
+  readonly address?: string;
   readonly latitude: number;
   readonly longitude: number;
   readonly name?: string;
-  readonly address?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -110,19 +110,19 @@ export interface Location {
 // ---------------------------------------------------------------------------
 
 export interface InboundMedia {
+  readonly caption?: string;
+  readonly filename?: string;
   readonly id: string;
   readonly mimeType: string;
   readonly sha256?: string;
-  readonly caption?: string;
-  readonly filename?: string;
   readonly voice?: boolean;
 }
 
 export interface InboundSticker {
+  readonly animated?: boolean;
   readonly id: string;
   readonly mimeType: string;
   readonly sha256?: string;
-  readonly animated?: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -135,14 +135,14 @@ export interface InboundButtonReply {
 }
 
 export interface InboundListReply {
+  readonly description?: string;
   readonly id: string;
   readonly title: string;
-  readonly description?: string;
 }
 
 export interface InboundNfmReply {
-  readonly name?: string;
   readonly body?: string;
+  readonly name?: string;
   readonly responseJson: string;
 }
 
@@ -152,8 +152,8 @@ export type InboundInteractive =
   | { type: "nfm_reply"; reply: InboundNfmReply };
 
 export interface InboundButton {
-  readonly text: string;
   readonly payload: string;
+  readonly text: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -161,10 +161,10 @@ export interface InboundButton {
 // ---------------------------------------------------------------------------
 
 export interface OrderProductItem {
+  readonly currency: string;
+  readonly itemPrice: number;
   readonly productRetailerId: string;
   readonly quantity: number;
-  readonly itemPrice: number;
-  readonly currency: string;
 }
 
 export interface Order {
@@ -179,8 +179,8 @@ export interface Order {
 
 export interface SystemMessage {
   readonly body: string;
-  readonly type: string;
   readonly newWaId?: string;
+  readonly type: string;
   readonly waId?: string;
 }
 
@@ -189,18 +189,18 @@ export interface SystemMessage {
 // ---------------------------------------------------------------------------
 
 export interface ContactCard {
-  readonly name: ContactName;
-  readonly phones: readonly ContactPhone[];
-  readonly emails: readonly ContactEmail[];
   readonly addresses: readonly ContactAddress[];
-  readonly org?: ContactOrg;
-  readonly urls: readonly ContactUrl[];
   readonly birthday?: string;
+  readonly emails: readonly ContactEmail[];
+  readonly name: ContactName;
+  readonly org?: ContactOrg;
+  readonly phones: readonly ContactPhone[];
+  readonly urls: readonly ContactUrl[];
 }
 
 export interface ContactName {
-  readonly formattedName: string;
   readonly firstName?: string;
+  readonly formattedName: string;
   readonly lastName?: string;
   readonly middleName?: string;
   readonly prefix?: string;
@@ -219,13 +219,13 @@ export interface ContactEmail {
 }
 
 export interface ContactAddress {
-  readonly street?: string;
   readonly city?: string;
-  readonly state?: string;
-  readonly zip?: string;
   readonly country?: string;
   readonly countryCode?: string;
+  readonly state?: string;
+  readonly street?: string;
   readonly type?: string;
+  readonly zip?: string;
 }
 
 export interface ContactOrg {
@@ -235,8 +235,8 @@ export interface ContactOrg {
 }
 
 export interface ContactUrl {
-  readonly url: string;
   readonly type?: string;
+  readonly url: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -244,6 +244,6 @@ export interface ContactUrl {
 // ---------------------------------------------------------------------------
 
 export interface Reaction {
-  readonly messageId: string;
   readonly emoji: string;
+  readonly messageId: string;
 }

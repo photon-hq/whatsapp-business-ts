@@ -11,50 +11,96 @@
 import type { ReconnectOptions } from "../types/common.ts";
 
 // ---------------------------------------------------------------------------
+// Internal types
+// ---------------------------------------------------------------------------
+
+interface BackoffState {
+  consecutiveFailures: number;
+  delay: number;
+}
+
+interface ResolvedOptions {
+  readonly initialDelay: number;
+  readonly maxAttempts: number;
+  readonly maxDelay: number;
+  readonly multiplier: number;
+  readonly onReconnect?: (attempt: number) => void;
+}
+
+// ---------------------------------------------------------------------------
+// Shared helpers
+// ---------------------------------------------------------------------------
+
+function resolveOptions(options?: ReconnectOptions): ResolvedOptions {
+  return {
+    initialDelay: options?.initialDelay ?? 1000,
+    maxDelay: options?.maxDelay ?? 30_000,
+    multiplier: options?.multiplier ?? 2,
+    maxAttempts: options?.maxAttempts ?? Number.POSITIVE_INFINITY,
+    onReconnect: options?.onReconnect,
+  };
+}
+
+async function* consumeStream<T>(
+  stream: AsyncIterable<T>,
+  state: BackoffState,
+  opts: ResolvedOptions
+): AsyncGenerator<T> {
+  let receivedAtLeastOne = false;
+
+  for await (const event of stream) {
+    if (!receivedAtLeastOne) {
+      receivedAtLeastOne = true;
+      state.consecutiveFailures = 0;
+      state.delay = opts.initialDelay;
+    }
+    yield event;
+  }
+}
+
+async function backoff(
+  state: BackoffState,
+  opts: ResolvedOptions
+): Promise<boolean> {
+  state.consecutiveFailures++;
+
+  if (state.consecutiveFailures > opts.maxAttempts) {
+    return false;
+  }
+
+  opts.onReconnect?.(state.consecutiveFailures);
+
+  await sleep(state.delay);
+  state.delay = Math.min(state.delay * opts.multiplier, opts.maxDelay);
+  return true;
+}
+
+// ---------------------------------------------------------------------------
 // Basic reconnect
 // ---------------------------------------------------------------------------
 
 export function withReconnect<T>(
   createStream: () => AsyncIterable<T>,
-  options?: ReconnectOptions,
+  options?: ReconnectOptions
 ): AsyncIterable<T> {
-  const initialDelay = options?.initialDelay ?? 1000;
-  const maxDelay = options?.maxDelay ?? 30_000;
-  const multiplier = options?.multiplier ?? 2;
-  const maxAttempts = options?.maxAttempts ?? Number.POSITIVE_INFINITY;
-  const onReconnect = options?.onReconnect;
+  const opts = resolveOptions(options);
 
   async function* reconnecting(): AsyncGenerator<T> {
-    let consecutiveFailures = 0;
-    let delay = initialDelay;
+    const state: BackoffState = {
+      consecutiveFailures: 0,
+      delay: opts.initialDelay,
+    };
 
     for (;;) {
       try {
-        const stream = createStream();
-        let receivedAtLeastOne = false;
-
-        for await (const event of stream) {
-          if (!receivedAtLeastOne) {
-            receivedAtLeastOne = true;
-            consecutiveFailures = 0;
-            delay = initialDelay;
-          }
-          yield event;
-        }
+        yield* consumeStream(createStream(), state, opts);
       } catch {
         // Stream errored — fall through to reconnect logic.
       }
 
-      consecutiveFailures++;
-
-      if (consecutiveFailures > maxAttempts) {
+      if (!(await backoff(state, opts))) {
         return;
       }
-
-      onReconnect?.(consecutiveFailures);
-
-      await sleep(delay);
-      delay = Math.min(delay * multiplier, maxDelay);
     }
   }
 
@@ -65,66 +111,55 @@ export function withReconnect<T>(
 // Resumable reconnect (with cursor-based gap-fill)
 // ---------------------------------------------------------------------------
 
+async function* gapFill<T>(
+  fetchMissed: (cursor: string) => Promise<T[]>,
+  getCursor: () => string | undefined
+): AsyncGenerator<T> {
+  const cursor = getCursor();
+  if (!cursor) {
+    return;
+  }
+
+  try {
+    const missed = await fetchMissed(cursor);
+    for (const event of missed) {
+      yield event;
+    }
+  } catch {
+    // Gap-fill failed — continue with live stream anyway.
+  }
+}
+
 export function withResumableReconnect<T>(
   createStream: () => AsyncIterable<T>,
   fetchMissed: (cursor: string) => Promise<T[]>,
   getCursor: () => string | undefined,
-  options?: ReconnectOptions,
+  options?: ReconnectOptions
 ): AsyncIterable<T> {
-  const initialDelay = options?.initialDelay ?? 1000;
-  const maxDelay = options?.maxDelay ?? 30_000;
-  const multiplier = options?.multiplier ?? 2;
-  const maxAttempts = options?.maxAttempts ?? Number.POSITIVE_INFINITY;
-  const onReconnect = options?.onReconnect;
+  const opts = resolveOptions(options);
 
   async function* reconnecting(): AsyncGenerator<T> {
-    let consecutiveFailures = 0;
-    let delay = initialDelay;
+    const state: BackoffState = {
+      consecutiveFailures: 0,
+      delay: opts.initialDelay,
+    };
     let isFirstConnect = true;
 
     for (;;) {
       try {
-        // On reconnect (not first connect), fetch missed events.
         if (!isFirstConnect) {
-          const cursor = getCursor();
-          if (cursor) {
-            try {
-              const missed = await fetchMissed(cursor);
-              for (const event of missed) {
-                yield event;
-              }
-            } catch {
-              // Gap-fill failed — continue with live stream anyway.
-            }
-          }
+          yield* gapFill(fetchMissed, getCursor);
         }
 
         isFirstConnect = false;
-        const stream = createStream();
-        let receivedAtLeastOne = false;
-
-        for await (const event of stream) {
-          if (!receivedAtLeastOne) {
-            receivedAtLeastOne = true;
-            consecutiveFailures = 0;
-            delay = initialDelay;
-          }
-          yield event;
-        }
+        yield* consumeStream(createStream(), state, opts);
       } catch {
         // Stream errored — fall through to reconnect logic.
       }
 
-      consecutiveFailures++;
-
-      if (consecutiveFailures > maxAttempts) {
+      if (!(await backoff(state, opts))) {
         return;
       }
-
-      onReconnect?.(consecutiveFailures);
-
-      await sleep(delay);
-      delay = Math.min(delay * multiplier, maxDelay);
     }
   }
 

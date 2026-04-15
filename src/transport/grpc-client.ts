@@ -44,17 +44,16 @@ export type { MessageServiceClient } from "../generated/photon/whatsapp/v1/messa
  * the client's `AsyncDisposable` implementation).
  */
 export interface GrpcClients {
-  readonly messages: MessageServiceClient;
-  readonly media: MediaServiceClient;
   readonly channel: Channel;
+  readonly media: MediaServiceClient;
+  readonly messages: MessageServiceClient;
 }
 
 // ---------------------------------------------------------------------------
 // Options
 // ---------------------------------------------------------------------------
 
-const SERVER_ADDRESS =
-  "whatsapp-business-grpc.spectrum.photon.codes:443";
+const SERVER_ADDRESS = "whatsapp-business-grpc.spectrum.photon.codes:443";
 
 export interface GrpcClientOptions {
   /** Credentials for the WhatsApp Business API. */
@@ -88,7 +87,7 @@ export function createGrpcClients(options: GrpcClientOptions): GrpcClients {
     {
       "grpc.keepalive_time_ms": 60_000,
       "grpc.keepalive_timeout_ms": 20_000,
-    },
+    }
   );
 
   // --- Client factory with middleware ---

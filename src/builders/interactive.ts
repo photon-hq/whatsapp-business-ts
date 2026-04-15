@@ -1,9 +1,9 @@
 import type {
-  InteractiveInput,
+  InteractiveFlowParametersInput,
   InteractiveHeaderInput,
+  InteractiveInput,
   InteractiveSectionInput,
   InteractiveSectionRowInput,
-  InteractiveFlowParametersInput,
 } from "../types/messages.ts";
 
 // ---------------------------------------------------------------------------
@@ -19,10 +19,7 @@ export function button(id: string, title: string): Button {
   return { id, title };
 }
 
-export function buttons(
-  body: string,
-  ...btns: Button[]
-): InteractiveInput {
+export function buttons(body: string, ...btns: Button[]): InteractiveInput {
   return {
     type: "button",
     body,
@@ -54,7 +51,7 @@ export class ListBuilder implements InteractiveInput {
     buttonText: string,
     sections: readonly InteractiveSectionInput[] = [],
     header?: InteractiveHeaderInput,
-    footer?: string,
+    footer?: string
   ) {
     this.body = body;
     this.header = header;
@@ -64,14 +61,14 @@ export class ListBuilder implements InteractiveInput {
 
   section(
     title: string,
-    rows: readonly InteractiveSectionRowInput[],
+    rows: readonly InteractiveSectionRowInput[]
   ): ListBuilder {
     return new ListBuilder(
       this.body,
       this.action.button,
       [...this.action.sections, { title, rows }],
       this.header,
-      this.footer,
+      this.footer
     );
   }
 
@@ -81,7 +78,7 @@ export class ListBuilder implements InteractiveInput {
       this.action.button,
       this.action.sections,
       header,
-      this.footer,
+      this.footer
     );
   }
 
@@ -91,7 +88,7 @@ export class ListBuilder implements InteractiveInput {
       this.action.button,
       this.action.sections,
       this.header,
-      text,
+      text
     );
   }
 }
@@ -106,7 +103,7 @@ export function list(body: string, buttonText: string): ListBuilder {
 
 export function product(
   catalogId: string,
-  productRetailerId: string,
+  productRetailerId: string
 ): InteractiveInput {
   return {
     type: "product",
@@ -132,7 +129,7 @@ export class ProductListBuilder implements InteractiveInput {
     catalogId: string,
     headerText: string,
     sections: readonly InteractiveSectionInput[] = [],
-    footer?: string,
+    footer?: string
   ) {
     this.header = { type: "text", text: headerText };
     this.action = { catalogId, sections };
@@ -141,11 +138,11 @@ export class ProductListBuilder implements InteractiveInput {
 
   section(
     title: string,
-    productRetailerIds: readonly string[],
+    productRetailerIds: readonly string[]
   ): ProductListBuilder {
     return new ProductListBuilder(
       this.action.catalogId,
-      this.header!.text!,
+      this.header?.text ?? "",
       [
         ...this.action.sections,
         {
@@ -155,23 +152,23 @@ export class ProductListBuilder implements InteractiveInput {
           })),
         },
       ],
-      this.footer,
+      this.footer
     );
   }
 
   withFooter(text: string): ProductListBuilder {
     return new ProductListBuilder(
       this.action.catalogId,
-      this.header!.text!,
+      this.header?.text ?? "",
       this.action.sections,
-      text,
+      text
     );
   }
 }
 
 export function productList(
   catalogId: string,
-  headerText: string,
+  headerText: string
 ): ProductListBuilder {
   return new ProductListBuilder(catalogId, headerText);
 }
@@ -182,9 +179,9 @@ export function productList(
 
 export interface FlowOptions {
   readonly body: string;
-  readonly parameters: InteractiveFlowParametersInput;
-  readonly header?: InteractiveHeaderInput;
   readonly footer?: string;
+  readonly header?: InteractiveHeaderInput;
+  readonly parameters: InteractiveFlowParametersInput;
 }
 
 export function flow(options: FlowOptions): InteractiveInput {

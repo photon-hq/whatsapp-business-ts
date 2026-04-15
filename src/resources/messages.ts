@@ -16,7 +16,7 @@ export class MessagesResource {
 
   async send(
     params: SendMessageParams,
-    options?: RequestOptions,
+    options?: RequestOptions
   ): Promise<SendMessageResult> {
     try {
       const request = mapSendParams(params);
@@ -32,10 +32,7 @@ export class MessagesResource {
     }
   }
 
-  async markRead(
-    messageId: string,
-    options?: RequestOptions,
-  ): Promise<void> {
+  async markRead(messageId: string, options?: RequestOptions): Promise<void> {
     try {
       await this._client.markRead({ messageId }, { signal: options?.signal });
     } catch (err) {

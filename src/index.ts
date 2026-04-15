@@ -1,52 +1,50 @@
+export type { Button, FlowOptions } from "./builders/interactive.ts";
+// Builders — interactive
 // biome-ignore lint/performance/noBarrelFile: intentional public API surface
-
+export {
+  button,
+  buttons,
+  flow,
+  list,
+  product,
+  productList,
+} from "./builders/interactive.ts";
+export type { CarouselCard, TemplateParam } from "./builders/template.ts";
+// Builders — template
+export {
+  actionJson,
+  couponCode,
+  document,
+  image,
+  location,
+  payload,
+  template,
+  text,
+  video,
+} from "./builders/template.ts";
 // Client
 export type { WhatsAppClient } from "./client.ts";
 export { createClient } from "./client.ts";
+// Errors
+export {
+  AuthenticationError,
+  ConnectionError,
+  NotFoundError,
+  RateLimitError,
+  ValidationError,
+  WhatsAppError,
+} from "./errors/whatsapp-error.ts";
+export type { EventsResource } from "./resources/events.ts";
+export type { MediaResource } from "./resources/media.ts";
+// Resources (type-only — instances accessed via client)
+export type { MessagesResource } from "./resources/messages.ts";
+// Streaming
+export { TypedEventStream } from "./streaming/event-stream.ts";
 export type {
   ClientOptions,
   RequestOptions,
   WhatsAppCredentials,
 } from "./types/client.ts";
-
-// Resources (type-only — instances accessed via client)
-export type { MessagesResource } from "./resources/messages.ts";
-export type { MediaResource } from "./resources/media.ts";
-export type { EventsResource } from "./resources/events.ts";
-
-// Message types
-export type {
-  ContactCardInput,
-  InteractiveInput,
-  LocationInput,
-  MediaInput,
-  MessageContent,
-  ReactionInput,
-  SendMessageParams,
-  SendMessageResult,
-  StickerInput,
-  TemplateInput,
-  TextInput,
-} from "./types/messages.ts";
-
-// Event types
-export type {
-  InboundContent,
-  InboundMessage,
-  InboundMessageEvent,
-  MessageStatus,
-  StatusUpdate,
-  StatusUpdateEvent,
-  WhatsAppEvent,
-} from "./types/events.ts";
-
-// Media types
-export type {
-  MediaUrlResult,
-  UploadOptions,
-  UploadResult,
-} from "./types/media.ts";
-
 // Common types
 export type {
   Contact,
@@ -68,42 +66,34 @@ export type {
   SystemMessage,
   WhatsAppApiError,
 } from "./types/common.ts";
-
-// Builders — template
-export {
-  template,
-  text,
-  image,
-  video,
-  document,
-  location,
-  payload,
-  couponCode,
-  actionJson,
-} from "./builders/template.ts";
-export type { TemplateParam, CarouselCard } from "./builders/template.ts";
-
-// Builders — interactive
-export {
-  button,
-  buttons,
-  flow,
-  list,
-  product,
-  productList,
-} from "./builders/interactive.ts";
-export type { Button, FlowOptions } from "./builders/interactive.ts";
-
-// Errors
-export {
-  AuthenticationError,
-  ConnectionError,
-  NotFoundError,
-  RateLimitError,
-  ValidationError,
-  WhatsAppError,
-} from "./errors/whatsapp-error.ts";
 export { ErrorCode } from "./types/errors.ts";
-
-// Streaming
-export { TypedEventStream } from "./streaming/event-stream.ts";
+// Event types
+export type {
+  InboundContent,
+  InboundMessage,
+  InboundMessageEvent,
+  MessageStatus,
+  StatusUpdate,
+  StatusUpdateEvent,
+  WhatsAppEvent,
+} from "./types/events.ts";
+// Media types
+export type {
+  MediaUrlResult,
+  UploadOptions,
+  UploadResult,
+} from "./types/media.ts";
+// Message types
+export type {
+  ContactCardInput,
+  InteractiveInput,
+  LocationInput,
+  MediaInput,
+  MessageContent,
+  ReactionInput,
+  SendMessageParams,
+  SendMessageResult,
+  StickerInput,
+  TemplateInput,
+  TextInput,
+} from "./types/messages.ts";

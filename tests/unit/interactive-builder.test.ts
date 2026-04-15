@@ -10,7 +10,11 @@ import {
 
 describe("buttons builder", () => {
   it("creates a button interactive message", () => {
-    const msg = buttons("Choose one", button("a", "Option A"), button("b", "Option B"));
+    const msg = buttons(
+      "Choose one",
+      button("a", "Option A"),
+      button("b", "Option B")
+    );
     expect(msg.type).toBe("button");
     expect(msg.body).toBe("Choose one");
     expect(msg.action?.buttons?.length).toBe(2);
@@ -26,9 +30,7 @@ describe("list builder", () => {
         { id: "pizza", title: "Pizza", description: "$12.99" },
         { id: "burger", title: "Burger" },
       ])
-      .section("Drinks", [
-        { id: "cola", title: "Cola" },
-      ]);
+      .section("Drinks", [{ id: "cola", title: "Cola" }]);
 
     expect(msg.type).toBe("list");
     expect(msg.body).toBe("Browse menu");

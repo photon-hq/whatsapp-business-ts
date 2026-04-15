@@ -39,7 +39,7 @@ export class EventsResource {
         }
       },
       () => lastCursor,
-      options?.reconnect,
+      options?.reconnect
     );
 
     return new TypedEventStream(stream);
@@ -64,7 +64,7 @@ export class EventsResource {
 
   private async *_mapStream(
     rpcStream: AsyncIterable<SubscribeEventsResponse>,
-    onCursor: (cursor: string) => void,
+    onCursor: (cursor: string) => void
   ): AsyncGenerator<WhatsAppEvent> {
     try {
       for await (const proto of rpcStream) {
