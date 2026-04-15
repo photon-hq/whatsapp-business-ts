@@ -7,13 +7,6 @@ export interface WhatsAppCredentials {
 }
 
 export interface ClientOptions extends WhatsAppCredentials {
-  /** Server address, e.g. `"127.0.0.1:50051"`. */
-  readonly address: string;
-  /**
-   * Whether to use TLS. If `true`, the channel uses SSL credentials.
-   * Defaults to `false` (insecure).
-   */
-  readonly tls?: boolean;
   /**
    * Default timeout in milliseconds for unary RPC calls.
    * Sets a deadline on each call unless one is already provided.

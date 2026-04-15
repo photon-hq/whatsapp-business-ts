@@ -53,9 +53,10 @@ export interface GrpcClients {
 // Options
 // ---------------------------------------------------------------------------
 
+const SERVER_ADDRESS =
+  "whatsapp-business-grpc.spectrum.photon.codes:443";
+
 export interface GrpcClientOptions {
-  /** Server address, e.g. `"127.0.0.1:50051"`. */
-  address: string;
   /** Credentials for the WhatsApp Business API. */
   credentials: WhatsAppCredentials;
   /**
@@ -69,11 +70,6 @@ export interface GrpcClientOptions {
    * Sets a deadline on each call unless one is already provided.
    */
   timeout?: number;
-  /**
-   * Whether to use TLS. If `true`, the channel uses SSL credentials.
-   * Defaults to `false` (insecure).
-   */
-  tls?: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -86,11 +82,14 @@ export interface GrpcClientOptions {
  */
 export function createGrpcClients(options: GrpcClientOptions): GrpcClients {
   // --- Channel ---
-  const credentials = options.tls
-    ? ChannelCredentials.createSsl()
-    : ChannelCredentials.createInsecure();
-
-  const channel = createChannel(options.address, credentials);
+  const channel = createChannel(
+    SERVER_ADDRESS,
+    ChannelCredentials.createSsl(),
+    {
+      "grpc.keepalive_time_ms": 60_000,
+      "grpc.keepalive_timeout_ms": 20_000,
+    },
+  );
 
   // --- Client factory with middleware ---
   //

@@ -16,13 +16,11 @@ export interface WhatsAppClient extends AsyncDisposable {
 
 export function createClient(options: ClientOptions): WhatsAppClient {
   const clients = createGrpcClients({
-    address: options.address,
     credentials: {
       accessToken: options.accessToken,
       phoneNumberId: options.phoneNumberId,
       appSecret: options.appSecret,
     },
-    tls: options.tls,
     timeout: options.timeout,
     retry: options.retry,
   });
