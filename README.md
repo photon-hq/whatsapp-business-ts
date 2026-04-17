@@ -1,6 +1,6 @@
 # @photon-ai/whatsapp-business
 
-TypeScript SDK for the WhatsApp Business API. Send and receive messages over a managed gRPC gateway — no webhook server, no payload parsing, no credential storage on our side.
+TypeScript SDK for the WhatsApp Business API. Send and receive messages over a managed gRPC gateway.
 
 ```bash
 bun add @photon-ai/whatsapp-business
