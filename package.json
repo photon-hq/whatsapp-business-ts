@@ -24,6 +24,7 @@
     "lint": "biome check .",
     "lint:fix": "biome check --fix .",
     "test": "bun test",
+    "script:subscribe": "bun run scripts/subscribe.ts",
     "prepublishOnly": "bun run build"
   },
   "dependencies": {
