@@ -57,7 +57,7 @@ Use this SDK directly with credentials from a Meta WhatsApp app you own. You'll 
 
 5. **Configure the webhook.** In your app: **Use cases** → **API Setup** → scroll to **Step 3** → **Configure webhooks** ([docs](https://developers.facebook.com/docs/whatsapp/cloud-api/guides/set-up-webhooks)):
    - **Callback URL:** `https://whatsapp-business.spectrum.photon.codes/webhook`
-   - **Verify Token:** any value — Meta requires you to set one, but Photon's shared endpoint doesn't check it (so `hello` works as well as anything else)
+   - **Verify Token:** any value. Meta's spec normally requires the endpoint to validate this token and return `hub.challenge` only on match, but Photon's shared endpoint always returns the challenge regardless, so anything works (e.g., `hello`).
    - Click **Verify and Save**, then toggle the `messages` field to **Subscribed**.
 
 6. Pass the three credentials to `createClient` — done.
