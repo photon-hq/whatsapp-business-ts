@@ -317,3 +317,89 @@ describe("EventsResource.subscribe stall detection", () => {
     expect(fetchMissedCursors[1]).toBe("c3");
   });
 });
+
+// ---------------------------------------------------------------------------
+// Teardown robustness
+//
+// Characterization tests: a source whose iterator.return() throws
+// SYNCHRONOUSLY (impossible for real nice-grpc async generators, whose
+// return() always yields a promise) must not break the public contract.
+// The teardown throw replaces the in-flight stall error inside _mapStream's
+// finally, but withResumableReconnect's catch treats any error identically,
+// so recovery — and early consumer exit — behave the same either way.
+// ---------------------------------------------------------------------------
+
+/** Source whose iterator.return() throws SYNCHRONOUSLY. */
+function syncThrowingReturnStream(frames: unknown[]): {
+  [Symbol.asyncIterator](): AsyncIterator<unknown>;
+} {
+  return {
+    [Symbol.asyncIterator]() {
+      let i = 0;
+      return {
+        next: () =>
+          i < frames.length
+            ? Promise.resolve({ done: false, value: frames[i++] })
+            : new Promise(() => undefined), // hang after frames — half-open
+        return: () => {
+          throw new Error("sync teardown boom");
+        },
+      } as AsyncIterator<unknown>;
+    },
+  };
+}
+
+describe("EventsResource.subscribe teardown robustness", () => {
+  it("breaking out of for-await does not surface a sync-throwing teardown", async () => {
+    const client = {
+      subscribeEvents: () =>
+        syncThrowingReturnStream([messageFrame("msg1", "c1")]),
+      fetchMissedEvents: async () => ({ events: [] }),
+    } as unknown as MessageServiceClient;
+    const stream = new EventsResource(client).subscribe({
+      reconnect: { initialDelay: 1, maxAttempts: 0 },
+      stallTimeoutMs: 0,
+    });
+
+    const ids: string[] = [];
+    for await (const event of stream) {
+      if (event.type === "message") {
+        ids.push(event.message.id);
+      }
+      break;
+    }
+
+    expect(ids).toEqual(["msg1"]);
+  });
+
+  it("a stall on a sync-throwing-teardown source still recovers via reconnect", async () => {
+    let calls = 0;
+    const client = {
+      subscribeEvents: () => {
+        calls += 1;
+        if (calls === 1) {
+          return syncThrowingReturnStream([messageFrame("msg1", "c1")]);
+        }
+        if (calls === 2) {
+          return (async function* () {
+            yield messageFrame("msg2", "c2");
+          })();
+        }
+        // Later attempts: empty ended streams so maxAttempts terminates.
+        return (async function* () {
+          // ends immediately
+        })();
+      },
+      fetchMissedEvents: async () => ({ events: [] }),
+    } as unknown as MessageServiceClient;
+
+    const ids = await surfacedIds(
+      new EventsResource(client).subscribe({
+        reconnect: { initialDelay: 1, maxAttempts: 1 },
+        stallTimeoutMs: 25,
+      })
+    );
+
+    expect(ids).toEqual(["msg1", "msg2"]);
+  });
+});
