@@ -35,6 +35,7 @@ export {
   WhatsAppError,
 } from "./errors/whatsapp-error.ts";
 export type { EventsResource } from "./resources/events.ts";
+export { DEFAULT_STALL_TIMEOUT_MS } from "./resources/events.ts";
 export type { MediaResource } from "./resources/media.ts";
 // Resources (type-only — instances accessed via client)
 export type { MessagesResource } from "./resources/messages.ts";
