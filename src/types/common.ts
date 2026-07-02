@@ -31,8 +31,26 @@ export interface ReconnectOptions {
 export interface SubscribeOptions {
   /** Resume from a previously saved cursor. */
   readonly cursor?: string;
+  /**
+   * Invoked on every frame received from the server, including heartbeats
+   * and cursor-only frames that never surface as events. The server
+   * heartbeats every ~30s on an otherwise idle stream, so this is the only
+   * signal that distinguishes a quiet-but-healthy stream from a silently
+   * dead one — key liveness watchdogs on it. Must not throw.
+   */
+  readonly onActivity?: () => void;
   /** Reconnection configuration for automatic reconnects. */
   readonly reconnect?: ReconnectOptions;
+  /**
+   * Milliseconds without a single frame (heartbeats included) before the
+   * live stream is declared dead and torn down for a reconnect. The server
+   * heartbeats every ~30s, so a healthy-but-idle stream never trips this.
+   * A half-open connection (LB idle timeout, NAT drop) raises no error at
+   * all — this timeout is what converts that silence into the reconnect +
+   * missed-event replay path. Default `120000` (4 missed heartbeats).
+   * Set `0` to disable.
+   */
+  readonly stallTimeoutMs?: number;
 }
 
 export interface FetchMissedOptions {
