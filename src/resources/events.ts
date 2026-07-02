@@ -88,17 +88,19 @@ export class EventsResource {
           const response = await this._client.fetchMissedEvents({
             cursor: { value: cursor },
           });
-          const missed = response.events
-            .map(mapMissedEvent)
-            .filter((e): e is WhatsAppEvent => e !== null);
           // Advance the resume cursor past what the gap-fill replayed —
           // otherwise a connect failure right after a gap-fill re-fetches
-          // (and re-delivers) the same events on the next attempt.
-          const latest = missed.at(-1)?.cursor;
+          // (and re-delivers) the same events on the next attempt. Read it
+          // from the RAW frames, before mapMissedEvent filters: a batch may
+          // end with frames this SDK version drops, and the cursor must
+          // still move past them (mirrors the live path in _mapStream).
+          const latest = response.events.at(-1)?.cursor?.value;
           if (latest) {
             lastCursor = latest;
           }
-          return missed;
+          return response.events
+            .map(mapMissedEvent)
+            .filter((e): e is WhatsAppEvent => e !== null);
         } catch (err) {
           throw fromGrpcError(err);
         }

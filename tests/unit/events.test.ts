@@ -277,4 +277,43 @@ describe("EventsResource.subscribe stall detection", () => {
     expect(fetchMissedCursors[0]).toBe("c1");
     expect(fetchMissedCursors[1]).toBe("c2");
   });
+
+  it("advances the resume cursor from raw replay frames, not only surfaced events", async () => {
+    // A replay batch may END with frames mapMissedEvent drops (e.g. an event
+    // type this SDK version doesn't know). The cursor must still advance past
+    // them — mirroring the live path, which advances from the raw frame
+    // before mapping — or every later reconnect re-fetches the same tail.
+    const unknownFrame = (cursor: string) => ({ cursor: { value: cursor } });
+    const { client, fetchMissedCursors } = fakeReconnectingClient(
+      [
+        async function* () {
+          yield messageFrame("msg1", "c1");
+          await hangForever();
+        },
+        // biome-ignore lint/correctness/useYield: scripted connect failure
+        async function* (): AsyncGenerator<unknown> {
+          throw new Error("connect failed");
+        },
+        async function* () {
+          yield messageFrame("msg4", "c4");
+        },
+      ],
+      (cursor) =>
+        cursor === "c1" ? [messageFrame("msg2", "c2"), unknownFrame("c3")] : []
+    );
+    const events = new EventsResource(client);
+
+    const ids = await surfacedIds(
+      events.subscribe({
+        reconnect: { initialDelay: 1, maxAttempts: 2 },
+        stallTimeoutMs: 25,
+      })
+    );
+
+    expect(ids).toEqual(["msg1", "msg2", "msg4"]);
+    expect(fetchMissedCursors[0]).toBe("c1");
+    // The second gap-fill resumes from the raw trailing frame's cursor (c3),
+    // not the last surfaced event's (c2).
+    expect(fetchMissedCursors[1]).toBe("c3");
+  });
 });
