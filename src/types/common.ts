@@ -20,7 +20,16 @@ export interface ReconnectOptions {
   readonly maxDelay?: number;
   /** Multiplier applied to the delay after each failed attempt. Default `2`. */
   readonly multiplier?: number;
-  /** Callback invoked before each reconnect attempt. */
+  /**
+   * Invoked before a reconnect that follows a connection that ended by
+   * throwing, with the error and the (1-based) attempt number. This is the
+   * only place the underlying failure is surfaced — the loop swallows it to
+   * keep reconnecting — so key "why is this stream flapping?" telemetry on it.
+   * A clean server-side stream end reports through {@link onReconnect} only.
+   * Must not throw.
+   */
+  readonly onError?: (error: unknown, attempt: number) => void;
+  /** Callback invoked before each reconnect attempt. Must not throw. */
   readonly onReconnect?: (attempt: number) => void;
 }
 

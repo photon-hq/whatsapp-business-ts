@@ -90,6 +90,43 @@ describe("TypedEventStream", () => {
     ).toThrow("closed");
   });
 
+  it("consumer teardown does not hang on a source whose return() never settles", async () => {
+    // Defense-in-depth backstop: even a source that cannot honor return()
+    // (e.g. a half-open gRPC read with stall detection off) must not hold the
+    // consumer's iteration hostage. In prod the hung party was the wrapper's
+    // `for await`, not close() — so assert the pending next() is released.
+    let returnCalled = false;
+    const wedgedSource: AsyncIterable<number> = {
+      [Symbol.asyncIterator]() {
+        return {
+          next: () => new Promise<IteratorResult<number>>(() => undefined),
+          return: () => {
+            returnCalled = true;
+            // Never resolves — the pathological case the timeout guards.
+            return new Promise<IteratorResult<number>>(() => undefined);
+          },
+        };
+      },
+    };
+
+    // 50ms teardown cap so the test is fast; production default is 5s.
+    const stream = new TypedEventStream(wedgedSource, undefined, 50);
+    const iterator = stream[Symbol.asyncIterator]();
+    const pending = iterator.next(); // the consumer's blocked read
+    pending.catch(() => undefined);
+
+    await new Promise((r) => setTimeout(r, 10));
+    stream.close(); // trip cancellation (does not itself await the iteration)
+
+    const settled = await Promise.race([
+      pending.then((r) => (r.done ? "released" : "value")),
+      new Promise((r) => setTimeout(() => r("HUNG"), 1000)),
+    ]);
+
+    expect(settled).toBe("released");
+    expect(returnCalled).toBe(true);
+  });
+
   it("supports chaining filter + map + take", async () => {
     const stream = new TypedEventStream(createSource([1, 2, 3, 4, 5, 6, 7, 8]));
     const result = stream

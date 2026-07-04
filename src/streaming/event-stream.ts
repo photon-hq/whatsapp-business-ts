@@ -11,16 +11,34 @@
  * consuming them.
  */
 
+/**
+ * Backstop for the teardown of a misbehaving source. The abortable reconnect
+ * loop (see reconnect.ts) settles its `return()` promptly, so this only fires
+ * for a source that genuinely cannot honor `return()` — e.g. a raw half-open
+ * gRPC read with stall detection disabled. Bounding it means `close()` can
+ * never be held hostage by the source, which is the difference between a
+ * stalled stream that self-heals and one that stays dead until a manual reroll.
+ */
+const RETURN_TEARDOWN_TIMEOUT_MS = 5000;
+
 export class TypedEventStream<T> implements AsyncIterable<T>, AsyncDisposable {
   private readonly _source: AsyncIterable<T>;
   private readonly _cleanup: (() => Promise<void>) | undefined;
+  private readonly _returnTeardownTimeoutMs: number;
   private _closed = false;
   private _consumed = false;
   private _cancelResolve: (() => void) | undefined;
 
-  constructor(source: AsyncIterable<T>, cleanup?: () => Promise<void>) {
+  constructor(
+    source: AsyncIterable<T>,
+    cleanup?: () => Promise<void>,
+    // Overridable teardown cap; production uses the default. Exposed so the
+    // backstop can be exercised without a multi-second test.
+    returnTeardownTimeoutMs: number = RETURN_TEARDOWN_TIMEOUT_MS
+  ) {
     this._source = source;
     this._cleanup = cleanup;
+    this._returnTeardownTimeoutMs = returnTeardownTimeoutMs;
   }
 
   // -------------------------------------------------------------------------
@@ -173,7 +191,25 @@ export class TypedEventStream<T> implements AsyncIterable<T>, AsyncDisposable {
         yield result.value;
       }
     } finally {
-      await iterator.return?.(undefined);
+      // Best-effort upstream cancellation, bounded so a source that cannot
+      // honor return() can never hang teardown. See RETURN_TEARDOWN_TIMEOUT_MS.
+      const returned = iterator.return?.(undefined);
+      if (returned) {
+        let timer: ReturnType<typeof setTimeout> | undefined;
+        const timeout = new Promise<void>((resolve) => {
+          timer = setTimeout(resolve, this._returnTeardownTimeoutMs);
+        });
+        // Swallow BOTH outcomes: a source whose return() rejects must not throw
+        // out of the finally, and the timeout branch must win cleanly.
+        const settled = Promise.resolve(returned).then(
+          () => undefined,
+          () => undefined
+        );
+        await Promise.race([settled, timeout]);
+        if (timer !== undefined) {
+          clearTimeout(timer);
+        }
+      }
     }
   }
 
