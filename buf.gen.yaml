@@ -1,4 +1,6 @@
 version: v2
+inputs:
+  - module: buf.build/photon-hq/whatsapp
 plugins:
   - local: protoc-gen-ts_proto
     out: src/generated
