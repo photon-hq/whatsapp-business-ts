@@ -510,12 +510,13 @@ function mapInboundContent(proto: ProtoInboundMessage): InboundContent {
         type: "order",
         order: {
           catalogId: proto.order?.catalogId ?? "",
-          productItems: proto.order?.productItems.map((p) => ({
-            productRetailerId: p.productRetailerId,
-            quantity: p.quantity,
-            itemPrice: p.itemPrice,
-            currency: p.currency,
-          })) ?? [],
+          productItems:
+            proto.order?.productItems.map((p) => ({
+              productRetailerId: p.productRetailerId,
+              quantity: p.quantity,
+              itemPrice: p.itemPrice,
+              currency: p.currency,
+            })) ?? [],
           text: proto.order?.text,
         },
       };
