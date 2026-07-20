@@ -1,6 +1,8 @@
 version: v2
 inputs:
-  - module: buf.build/photon-hq/whatsapp
+  # Pinned BSR commit (main @ spectrum-whatsapp-business 17e7e9c).
+  # To pick up schema changes: update the ref, run `bun run generate`, commit both.
+  - module: buf.build/photon-hq/whatsapp:b218d3336d65421c8b215137797db344
 plugins:
   - local: protoc-gen-ts_proto
     out: src/generated
