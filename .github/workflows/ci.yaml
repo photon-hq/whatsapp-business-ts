@@ -13,6 +13,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - uses: oven-sh/setup-bun@v2
         with:
@@ -26,6 +28,7 @@ jobs:
 
       - name: Check generated code is in sync
         run: |
+          git add -N src/generated/
           if ! git diff --exit-code src/generated/; then
             echo "::error::src/generated/ is out of sync with buf.build/photon-hq/whatsapp — run 'bun run generate' and commit the result."
             exit 1
