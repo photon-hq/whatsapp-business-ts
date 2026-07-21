@@ -89,6 +89,7 @@ export type {
   ContactCardInput,
   InteractiveInput,
   LocationInput,
+  MarkReadOptions,
   MediaInput,
   MessageContent,
   ReactionInput,

@@ -151,3 +151,17 @@ export interface SendMessageResult {
   readonly messageId: string;
   readonly messageStatus: string;
 }
+
+// ---------------------------------------------------------------------------
+// Mark read options
+// ---------------------------------------------------------------------------
+
+export interface MarkReadOptions {
+  /**
+   * Also display a typing indicator in the chat. Meta dismisses it after
+   * 25 seconds or when the business sends a message, whichever comes first —
+   * there is no explicit "stop typing" call. The message being marked read
+   * must be an inbound message.
+   */
+  readonly typingIndicator?: boolean;
+}
