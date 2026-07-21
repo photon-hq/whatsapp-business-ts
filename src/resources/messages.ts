@@ -3,6 +3,7 @@ import type { MessageServiceClient } from "../transport/grpc-client.ts";
 import { mapSendParams } from "../transport/mapper.ts";
 import type { RequestOptions } from "../types/client.ts";
 import type {
+  MarkReadOptions,
   SendMessageParams,
   SendMessageResult,
 } from "../types/messages.ts";
@@ -32,9 +33,15 @@ export class MessagesResource {
     }
   }
 
-  async markRead(messageId: string, options?: RequestOptions): Promise<void> {
+  async markRead(
+    messageId: string,
+    options?: RequestOptions & MarkReadOptions
+  ): Promise<void> {
     try {
-      await this._client.markRead({ messageId }, { signal: options?.signal });
+      await this._client.markRead(
+        { messageId, typingIndicator: options?.typingIndicator ?? false },
+        { signal: options?.signal }
+      );
     } catch (err) {
       throw fromGrpcError(err);
     }

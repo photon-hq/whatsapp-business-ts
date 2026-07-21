@@ -96,6 +96,13 @@ export interface SendMessageResponse {
 
 export interface MarkReadRequest {
   messageId: string;
+  /**
+   * Also display a typing indicator in the chat. Meta dismisses it after
+   * 25 seconds or when the business sends a message, whichever comes first;
+   * there is no explicit "stop typing" API. message_id must reference an
+   * inbound message — typing piggybacks on the mark-as-read call.
+   */
+  typingIndicator: boolean;
 }
 
 export interface MarkReadResponse {
@@ -856,13 +863,16 @@ export const SendMessageResponse: MessageFns<SendMessageResponse> = {
 };
 
 function createBaseMarkReadRequest(): MarkReadRequest {
-  return { messageId: "" };
+  return { messageId: "", typingIndicator: false };
 }
 
 export const MarkReadRequest: MessageFns<MarkReadRequest> = {
   encode(message: MarkReadRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.messageId !== "") {
       writer.uint32(10).string(message.messageId);
+    }
+    if (message.typingIndicator !== false) {
+      writer.uint32(16).bool(message.typingIndicator);
     }
     return writer;
   },
@@ -882,6 +892,14 @@ export const MarkReadRequest: MessageFns<MarkReadRequest> = {
           message.messageId = reader.string();
           continue;
         }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.typingIndicator = reader.bool();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -898,6 +916,11 @@ export const MarkReadRequest: MessageFns<MarkReadRequest> = {
         : isSet(object.message_id)
         ? globalThis.String(object.message_id)
         : "",
+      typingIndicator: isSet(object.typingIndicator)
+        ? globalThis.Boolean(object.typingIndicator)
+        : isSet(object.typing_indicator)
+        ? globalThis.Boolean(object.typing_indicator)
+        : false,
     };
   },
 
@@ -905,6 +928,9 @@ export const MarkReadRequest: MessageFns<MarkReadRequest> = {
     const obj: any = {};
     if (message.messageId !== "") {
       obj.messageId = message.messageId;
+    }
+    if (message.typingIndicator !== false) {
+      obj.typingIndicator = message.typingIndicator;
     }
     return obj;
   },
@@ -915,6 +941,7 @@ export const MarkReadRequest: MessageFns<MarkReadRequest> = {
   fromPartial(object: DeepPartial<MarkReadRequest>): MarkReadRequest {
     const message = createBaseMarkReadRequest();
     message.messageId = object.messageId ?? "";
+    message.typingIndicator = object.typingIndicator ?? false;
     return message;
   },
 };
