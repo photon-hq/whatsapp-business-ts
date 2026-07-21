@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Generate protos from BSR
+        run: bun run generate
+
+      - name: Check generated code is in sync
+        run: |
+          git add -N src/generated/
+          if ! git diff --exit-code src/generated/; then
+            echo "::error::src/generated/ is out of sync with buf.build/photon-hq/whatsapp — run 'bun run generate' and commit the result."
+            exit 1
+          fi
+
+      - name: Type-check
+        run: bun run check
+
+      - name: Lint
+        run: bun run lint
+
+      - name: Test
+        run: bun test
+
+      - name: Build
+        run: bun run build

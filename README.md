@@ -64,7 +64,7 @@ The webhook endpoint is free, public, and shared across all developers. You don'
 
 ```bash
 bun install          # install dependencies
-bun run generate     # regenerate protobuf types
+bun run generate     # regenerate protobuf types from buf.build/photon-hq/whatsapp
 bun run build        # generate + bundle with tsup
 bun run check        # type-check
 bun run lint         # lint with Biome
