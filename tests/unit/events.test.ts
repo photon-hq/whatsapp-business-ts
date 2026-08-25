@@ -403,3 +403,56 @@ describe("EventsResource.subscribe teardown robustness", () => {
     expect(ids).toEqual(["msg1", "msg2"]);
   });
 });
+
+describe("EventsResource.subscribe close cancels the reconnect loop", () => {
+  // The production leak, end to end: a line whose backend rejects every
+  // connect never reaches a yield point, so closing the stream could only
+  // queue a `return()` that never landed. The loop then reconnected on its
+  // own timer for the life of the process — one immortal WARN emitter per
+  // subscribe, accumulating on every token refresh.
+  it("stops reconnecting after close() on a stream that never yielded", async () => {
+    let subscribeCalls = 0;
+    let reconnects = 0;
+
+    const client = {
+      subscribeEvents: () => {
+        subscribeCalls++;
+        return (async function* () {
+          throw new Error("connect refused");
+          // biome-ignore lint/correctness/noUnreachable: generator must be async-iterable
+          yield undefined as unknown as SubscribeEventsResponse;
+        })();
+      },
+      fetchMissedEvents: async () => ({ events: [] }),
+    } as unknown as MessageServiceClient;
+
+    const events = new EventsResource(client);
+    const stream = events.subscribe({
+      reconnect: {
+        initialDelay: 5,
+        maxDelay: 5,
+        onReconnect: () => {
+          reconnects++;
+        },
+      },
+      stallTimeoutMs: 0,
+    });
+
+    const iterator = stream[Symbol.asyncIterator]();
+    const pending = iterator.next();
+
+    await new Promise((r) => setTimeout(r, 40));
+    expect(reconnects).toBeGreaterThan(0);
+
+    await stream.close();
+    const result = await pending;
+    expect(result.done).toBe(true);
+
+    // Frozen: no further backoff ticks, no further transport calls.
+    const reconnectsAtClose = reconnects;
+    const callsAtClose = subscribeCalls;
+    await new Promise((r) => setTimeout(r, 60));
+    expect(reconnects).toBe(reconnectsAtClose);
+    expect(subscribeCalls).toBe(callsAtClose);
+  });
+});

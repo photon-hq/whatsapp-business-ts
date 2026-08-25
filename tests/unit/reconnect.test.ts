@@ -99,3 +99,121 @@ describe("withResumableReconnect", () => {
     expect(items.map((i) => i.value)).toEqual([1, 2, 3, 10]);
   });
 });
+
+describe("reconnect cancellation", () => {
+  // Reproduces the production leak: a line whose client is closed fails on
+  // every connect attempt, so the generator never reaches a yield point and a
+  // queued `return()` can never land. Before the signal existed this loop
+  // outlived close() forever, emitting one onReconnect per backoff until the
+  // process died.
+  it("terminates a loop that never yielded, and stops reconnecting", async () => {
+    const controller = new AbortController();
+    let attempts = 0;
+    let created = 0;
+
+    const stream = withResumableReconnect<number>(
+      () => {
+        created++;
+        return {
+          // biome-ignore lint/correctness/useYield: models a stream that always fails before its first event
+          async *[Symbol.asyncIterator]() {
+            throw new Error("connect failed");
+          },
+        };
+      },
+      () => Promise.resolve([]),
+      () => undefined,
+      {
+        initialDelay: 5,
+        maxDelay: 5,
+        onReconnect: () => {
+          attempts++;
+        },
+        signal: controller.signal,
+      }
+    );
+
+    const iterator = stream[Symbol.asyncIterator]();
+    const next = iterator.next();
+
+    // Let it spin through a few failed connects, then abort mid-backoff.
+    await new Promise((r) => setTimeout(r, 40));
+    const attemptsAtAbort = attempts;
+    expect(attemptsAtAbort).toBeGreaterThan(0);
+
+    controller.abort();
+
+    // The pending next() resolves as done rather than hanging: the loop
+    // returned instead of sleeping out its backoff.
+    const result = await next;
+    expect(result.done).toBe(true);
+
+    // And nothing keeps ticking afterwards.
+    const createdAtAbort = created;
+    await new Promise((r) => setTimeout(r, 40));
+    expect(attempts).toBe(attemptsAtAbort);
+    expect(created).toBe(createdAtAbort);
+  });
+
+  it("does not fire onReconnect when aborted before the callback", async () => {
+    const controller = new AbortController();
+    controller.abort();
+    let attempts = 0;
+
+    const stream = withReconnect<number>(
+      () => ({
+        // biome-ignore lint/correctness/useYield: models a stream that always fails before its first event
+        async *[Symbol.asyncIterator]() {
+          throw new Error("connect failed");
+        },
+      }),
+      {
+        initialDelay: 5,
+        onReconnect: () => {
+          attempts++;
+        },
+        signal: controller.signal,
+      }
+    );
+
+    const items: number[] = [];
+    for await (const item of stream) {
+      items.push(item);
+    }
+    expect(items).toEqual([]);
+    expect(attempts).toBe(0);
+  });
+});
+
+describe("onReconnect cause", () => {
+  it("forwards the error that ended the previous attempt", async () => {
+    const causes: unknown[] = [];
+    const controller = new AbortController();
+
+    const stream = withReconnect<number>(
+      () => ({
+        // biome-ignore lint/correctness/useYield: models a stream that always fails before its first event
+        async *[Symbol.asyncIterator]() {
+          throw new Error("boom");
+        },
+      }),
+      {
+        initialDelay: 5,
+        maxDelay: 5,
+        onReconnect: (_attempt, cause) => {
+          causes.push(cause);
+        },
+        signal: controller.signal,
+      }
+    );
+
+    const iterator = stream[Symbol.asyncIterator]();
+    const pending = iterator.next();
+    await new Promise((r) => setTimeout(r, 30));
+    controller.abort();
+    await pending;
+
+    expect(causes.length).toBeGreaterThan(0);
+    expect((causes[0] as Error).message).toBe("boom");
+  });
+});

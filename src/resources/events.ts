@@ -72,6 +72,11 @@ export class EventsResource {
   subscribe(options?: SubscribeOptions): TypedEventStream<WhatsAppEvent> {
     let lastCursor = options?.cursor;
     const stallTimeoutMs = options?.stallTimeoutMs ?? DEFAULT_STALL_TIMEOUT_MS;
+    // Closing the returned stream has to kill the reconnect loop underneath it.
+    // Closing alone only queues `return()` on the generator, which lands at a
+    // yield point — and a stream that fails before its first event never
+    // reaches one, so the loop would otherwise outlive every close.
+    const controller = new AbortController();
 
     const stream = withResumableReconnect<WhatsAppEvent>(
       () =>
@@ -106,10 +111,13 @@ export class EventsResource {
         }
       },
       () => lastCursor,
-      options?.reconnect
+      { ...options?.reconnect, signal: controller.signal }
     );
 
-    return new TypedEventStream(stream);
+    return new TypedEventStream(stream, () => {
+      controller.abort();
+      return Promise.resolve();
+    });
   }
 
   async fetchMissed(options: FetchMissedOptions): Promise<FetchMissedResult> {

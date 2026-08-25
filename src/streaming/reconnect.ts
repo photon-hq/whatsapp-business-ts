@@ -24,7 +24,8 @@ interface ResolvedOptions {
   readonly maxAttempts: number;
   readonly maxDelay: number;
   readonly multiplier: number;
-  readonly onReconnect?: (attempt: number) => void;
+  readonly onReconnect?: (attempt: number, cause?: unknown) => void;
+  readonly signal?: AbortSignal;
 }
 
 // ---------------------------------------------------------------------------
@@ -38,6 +39,7 @@ function resolveOptions(options?: ReconnectOptions): ResolvedOptions {
     multiplier: options?.multiplier ?? 2,
     maxAttempts: options?.maxAttempts ?? Number.POSITIVE_INFINITY,
     onReconnect: options?.onReconnect,
+    signal: options?.signal,
   };
 }
 
@@ -60,7 +62,8 @@ async function* consumeStream<T>(
 
 async function backoff(
   state: BackoffState,
-  opts: ResolvedOptions
+  opts: ResolvedOptions,
+  cause?: unknown
 ): Promise<boolean> {
   state.consecutiveFailures++;
 
@@ -68,11 +71,20 @@ async function backoff(
     return false;
   }
 
-  opts.onReconnect?.(state.consecutiveFailures);
+  // Checked before the callback so a stream closed mid-backoff goes quiet
+  // immediately rather than emitting one last reconnect notification.
+  if (opts.signal?.aborted) {
+    return false;
+  }
 
-  await sleep(state.delay);
+  opts.onReconnect?.(state.consecutiveFailures, cause);
+
+  // A failing stream spends nearly all of its life parked here, so this is the
+  // wait that has to be interruptible — a queued `return()` on the generator
+  // cannot land while it sleeps.
+  await sleep(state.delay, opts.signal);
   state.delay = Math.min(state.delay * opts.multiplier, opts.maxDelay);
-  return true;
+  return !opts.signal?.aborted;
 }
 
 // ---------------------------------------------------------------------------
@@ -92,13 +104,20 @@ export function withReconnect<T>(
     };
 
     for (;;) {
-      try {
-        yield* consumeStream(createStream(), state, opts);
-      } catch {
-        // Stream errored — fall through to reconnect logic.
+      if (opts.signal?.aborted) {
+        return;
       }
 
-      if (!(await backoff(state, opts))) {
+      let cause: unknown;
+      try {
+        yield* consumeStream(createStream(), state, opts);
+      } catch (error) {
+        // Stream errored — reconnect, but keep the reason: it is the only
+        // explanation a caller's onReconnect can surface.
+        cause = error;
+      }
+
+      if (!(await backoff(state, opts, cause))) {
         return;
       }
     }
@@ -146,6 +165,13 @@ export function withResumableReconnect<T>(
     let isFirstConnect = true;
 
     for (;;) {
+      // Covers an abort that lands while the factory or gap-fill is in flight,
+      // where there is still no yield point for a queued `return()` to reach.
+      if (opts.signal?.aborted) {
+        return;
+      }
+
+      let cause: unknown;
       try {
         if (!isFirstConnect) {
           yield* gapFill(fetchMissed, getCursor);
@@ -153,11 +179,13 @@ export function withResumableReconnect<T>(
 
         isFirstConnect = false;
         yield* consumeStream(createStream(), state, opts);
-      } catch {
-        // Stream errored — fall through to reconnect logic.
+      } catch (error) {
+        // Stream errored — reconnect, but keep the reason: it is the only
+        // explanation a caller's onReconnect can surface.
+        cause = error;
       }
 
-      if (!(await backoff(state, opts))) {
+      if (!(await backoff(state, opts, cause))) {
         return;
       }
     }
@@ -170,6 +198,20 @@ export function withResumableReconnect<T>(
 // Helpers
 // ---------------------------------------------------------------------------
 
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+function sleep(ms: number, signal?: AbortSignal): Promise<void> {
+  if (signal?.aborted) {
+    return Promise.resolve();
+  }
+  return new Promise((resolve) => {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const onAbort = (): void => {
+      clearTimeout(timer);
+      resolve();
+    };
+    timer = setTimeout(() => {
+      signal?.removeEventListener("abort", onAbort);
+      resolve();
+    }, ms);
+    signal?.addEventListener("abort", onAbort, { once: true });
+  });
 }
