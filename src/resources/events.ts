@@ -78,6 +78,18 @@ export class EventsResource {
     // reaches one, so the loop would otherwise outlive every close.
     const controller = new AbortController();
 
+    // The loop is handed OUR signal below, so a caller-supplied one has to be
+    // forwarded rather than overwritten — otherwise `reconnect.signal` would
+    // typecheck and then silently do nothing. The listener is dropped on
+    // cleanup so a long-lived caller signal does not pin this subscription.
+    const callerSignal = options?.reconnect?.signal;
+    const forwardAbort = (): void => controller.abort(callerSignal?.reason);
+    if (callerSignal?.aborted) {
+      forwardAbort();
+    } else {
+      callerSignal?.addEventListener("abort", forwardAbort, { once: true });
+    }
+
     const stream = withResumableReconnect<WhatsAppEvent>(
       () =>
         this._mapStream(
@@ -88,11 +100,12 @@ export class EventsResource {
           options?.onActivity,
           stallTimeoutMs
         ),
-      async (cursor) => {
+      async (cursor, signal) => {
         try {
-          const response = await this._client.fetchMissedEvents({
-            cursor: { value: cursor },
-          });
+          const response = await this._client.fetchMissedEvents(
+            { cursor: { value: cursor } },
+            { signal }
+          );
           // Advance the resume cursor past what the gap-fill replayed —
           // otherwise a connect failure right after a gap-fill re-fetches
           // (and re-delivers) the same events on the next attempt. Read it
@@ -115,6 +128,7 @@ export class EventsResource {
     );
 
     return new TypedEventStream(stream, () => {
+      callerSignal?.removeEventListener("abort", forwardAbort);
       controller.abort();
       return Promise.resolve();
     });

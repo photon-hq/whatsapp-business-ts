@@ -4,6 +4,25 @@ import {
   withResumableReconnect,
 } from "../../src/streaming/reconnect.ts";
 
+// Timings for the cancellation tests: long enough that a loop takes several
+// backoff ticks inside an observation window, short enough to keep the suite
+// fast. Every one of these tests hangs to timeout if abort is not honoured,
+// so these bound the happy path only.
+
+/** Backoff delay, pinned flat (initial === max) so ticks stay countable. */
+const RETRY_DELAY_MS = 5;
+/** Time given to a failing loop to spin before the abort under test. */
+const SETTLE_WINDOW_MS = 40;
+/** Time watched after an abort to prove nothing keeps ticking. */
+const POST_ABORT_WINDOW_MS = 40;
+/** Time given to a failing loop to record at least one onReconnect cause. */
+const CAUSE_OBSERVATION_WINDOW_MS = 30;
+
+const delay = (ms: number): Promise<void> =>
+  new Promise<void>((resolve) => {
+    setTimeout(resolve, ms);
+  });
+
 describe("withReconnect", () => {
   it("yields items from the stream", async () => {
     const stream = withReconnect(
@@ -124,8 +143,8 @@ describe("reconnect cancellation", () => {
       () => Promise.resolve([]),
       () => undefined,
       {
-        initialDelay: 5,
-        maxDelay: 5,
+        initialDelay: RETRY_DELAY_MS,
+        maxDelay: RETRY_DELAY_MS,
         onReconnect: () => {
           attempts++;
         },
@@ -137,7 +156,7 @@ describe("reconnect cancellation", () => {
     const next = iterator.next();
 
     // Let it spin through a few failed connects, then abort mid-backoff.
-    await new Promise((r) => setTimeout(r, 40));
+    await delay(SETTLE_WINDOW_MS);
     const attemptsAtAbort = attempts;
     expect(attemptsAtAbort).toBeGreaterThan(0);
 
@@ -150,8 +169,60 @@ describe("reconnect cancellation", () => {
 
     // And nothing keeps ticking afterwards.
     const createdAtAbort = created;
-    await new Promise((r) => setTimeout(r, 40));
+    await delay(POST_ABORT_WINDOW_MS);
     expect(attempts).toBe(attemptsAtAbort);
+    expect(created).toBe(createdAtAbort);
+  });
+
+  // The backoff sleep is not the only wait without a yield point beneath it:
+  // gap-fill awaits a unary RPC, and on a half-open connection that call can
+  // stay pending long past the close that should have ended the loop.
+  it("terminates while a gap-fill is still in flight", async () => {
+    const controller = new AbortController();
+    let created = 0;
+    let fetchMissedSignal: AbortSignal | undefined;
+
+    const stream = withResumableReconnect<number>(
+      () => {
+        created++;
+        return {
+          async *[Symbol.asyncIterator]() {
+            // One event, then a disconnect — so the next iteration is a
+            // reconnect, which is the path that gap-fills.
+            yield 1;
+          },
+        };
+      },
+      (_cursor, signal) => {
+        fetchMissedSignal = signal;
+        // Never settles: the call the loop cannot see the end of.
+        return new Promise<number[]>(() => undefined);
+      },
+      () => "cursor-1",
+      {
+        initialDelay: RETRY_DELAY_MS,
+        maxDelay: RETRY_DELAY_MS,
+        signal: controller.signal,
+      }
+    );
+
+    const iterator = stream[Symbol.asyncIterator]();
+    expect((await iterator.next()).value).toBe(1);
+
+    // Second next() drives the reconnect and parks in gap-fill.
+    const pending = iterator.next();
+    await delay(SETTLE_WINDOW_MS);
+    const createdAtAbort = created;
+
+    controller.abort();
+
+    // Resolves instead of hanging on the never-settling fetch, and the RPC
+    // itself is cancelled rather than left running.
+    expect((await pending).done).toBe(true);
+    expect(fetchMissedSignal?.aborted).toBe(true);
+
+    // No live stream is opened after the abort, either.
+    await delay(POST_ABORT_WINDOW_MS);
     expect(created).toBe(createdAtAbort);
   });
 
@@ -168,7 +239,7 @@ describe("reconnect cancellation", () => {
         },
       }),
       {
-        initialDelay: 5,
+        initialDelay: RETRY_DELAY_MS,
         onReconnect: () => {
           attempts++;
         },
@@ -198,8 +269,8 @@ describe("onReconnect cause", () => {
         },
       }),
       {
-        initialDelay: 5,
-        maxDelay: 5,
+        initialDelay: RETRY_DELAY_MS,
+        maxDelay: RETRY_DELAY_MS,
         onReconnect: (_attempt, cause) => {
           causes.push(cause);
         },
@@ -209,7 +280,7 @@ describe("onReconnect cause", () => {
 
     const iterator = stream[Symbol.asyncIterator]();
     const pending = iterator.next();
-    await new Promise((r) => setTimeout(r, 30));
+    await delay(CAUSE_OBSERVATION_WINDOW_MS);
     controller.abort();
     await pending;
 
