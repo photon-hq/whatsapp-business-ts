@@ -20,8 +20,20 @@ export interface ReconnectOptions {
   readonly maxDelay?: number;
   /** Multiplier applied to the delay after each failed attempt. Default `2`. */
   readonly multiplier?: number;
-  /** Callback invoked before each reconnect attempt. */
-  readonly onReconnect?: (attempt: number) => void;
+  /**
+   * Invoked before each reconnect attempt. `cause` is the error that ended
+   * the previous attempt, and is undefined when the stream simply ended.
+   * Without it a caller logging this callback has no way to say *why* the
+   * stream is reconnecting.
+   */
+  readonly onReconnect?: (attempt: number, cause?: unknown) => void;
+  /**
+   * Aborts the reconnect loop. `TypedEventStream.close()` wires this up, so
+   * callers rarely set it directly. Without it a stream that keeps failing
+   * before its first event never reaches a yield point, and the loop survives
+   * `close()` for the life of the process.
+   */
+  readonly signal?: AbortSignal;
 }
 
 // ---------------------------------------------------------------------------

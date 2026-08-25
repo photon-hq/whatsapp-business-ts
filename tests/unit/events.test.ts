@@ -403,3 +403,118 @@ describe("EventsResource.subscribe teardown robustness", () => {
     expect(ids).toEqual(["msg1", "msg2"]);
   });
 });
+
+// Timings for the cancellation tests: long enough for the loop to take
+// several backoff ticks inside an observation window, short enough to keep
+// the suite fast. Both tests hang to timeout if abort is not honoured.
+
+/** Backoff delay, pinned flat (initial === max) so ticks stay countable. */
+const RETRY_DELAY_MS = 5;
+/** Time given to a refusing loop to spin before the close under test. */
+const SETTLE_WINDOW_MS = 40;
+/** Time watched after the close to prove nothing keeps ticking. */
+const POST_CLOSE_WINDOW_MS = 60;
+
+const delay = (ms: number): Promise<void> =>
+  new Promise<void>((resolve) => {
+    setTimeout(resolve, ms);
+  });
+
+/** A backend that refuses every connect, counting the attempts. */
+function refusingClient(): {
+  client: MessageServiceClient;
+  calls: () => number;
+} {
+  let subscribeCalls = 0;
+  const client = {
+    subscribeEvents: () => {
+      subscribeCalls++;
+      return (async function* () {
+        throw new Error("connect refused");
+        // biome-ignore lint/correctness/noUnreachable: generator must be async-iterable
+        yield undefined as unknown as SubscribeEventsResponse;
+      })();
+    },
+    fetchMissedEvents: async () => ({ events: [] }),
+  } as unknown as MessageServiceClient;
+  return { client, calls: () => subscribeCalls };
+}
+
+describe("EventsResource.subscribe cancels the reconnect loop", () => {
+  // The production leak, end to end: a line whose backend rejects every
+  // connect never reaches a yield point, so closing the stream could only
+  // queue a `return()` that never landed. The loop then reconnected on its
+  // own timer for the life of the process — one immortal WARN emitter per
+  // subscribe, accumulating on every token refresh.
+  it("stops reconnecting after close() on a stream that never yielded", async () => {
+    let reconnects = 0;
+    const { client, calls } = refusingClient();
+
+    const events = new EventsResource(client);
+    const stream = events.subscribe({
+      reconnect: {
+        initialDelay: RETRY_DELAY_MS,
+        maxDelay: RETRY_DELAY_MS,
+        onReconnect: () => {
+          reconnects++;
+        },
+      },
+      stallTimeoutMs: 0,
+    });
+
+    const iterator = stream[Symbol.asyncIterator]();
+    const pending = iterator.next();
+
+    await delay(SETTLE_WINDOW_MS);
+    expect(reconnects).toBeGreaterThan(0);
+
+    await stream.close();
+    const result = await pending;
+    expect(result.done).toBe(true);
+
+    // Frozen: no further backoff ticks, no further transport calls.
+    const reconnectsAtClose = reconnects;
+    const callsAtClose = calls();
+    await delay(POST_CLOSE_WINDOW_MS);
+    expect(reconnects).toBe(reconnectsAtClose);
+    expect(calls()).toBe(callsAtClose);
+  });
+
+  // subscribe() hands the loop its OWN signal, so a caller-supplied one has
+  // to be forwarded into it — otherwise `reconnect.signal` typechecks and
+  // then does nothing, which is worse than not offering it.
+  it("stops reconnecting when a caller-supplied signal aborts", async () => {
+    let reconnects = 0;
+    const controller = new AbortController();
+    const { client, calls } = refusingClient();
+
+    const events = new EventsResource(client);
+    const stream = events.subscribe({
+      reconnect: {
+        initialDelay: RETRY_DELAY_MS,
+        maxDelay: RETRY_DELAY_MS,
+        onReconnect: () => {
+          reconnects++;
+        },
+        signal: controller.signal,
+      },
+      stallTimeoutMs: 0,
+    });
+
+    const iterator = stream[Symbol.asyncIterator]();
+    const pending = iterator.next();
+
+    await delay(SETTLE_WINDOW_MS);
+    expect(reconnects).toBeGreaterThan(0);
+
+    controller.abort();
+    const result = await pending;
+    expect(result.done).toBe(true);
+
+    const reconnectsAtAbort = reconnects;
+    const callsAtAbort = calls();
+    await delay(POST_CLOSE_WINDOW_MS);
+    expect(reconnects).toBe(reconnectsAtAbort);
+    expect(calls()).toBe(callsAtAbort);
+  });
+});
