@@ -3,9 +3,20 @@ name: Release
 on:
   push:
     branches: [main]
+  workflow_dispatch:
+    inputs:
+      release:
+        type: boolean
+        description: "Force release (skip the PR-label check)"
+        default: false
+      dry-run:
+        type: boolean
+        description: "Run without publishing"
+        default: false
 
 permissions:
   contents: write
+  id-token: write
   packages: write
   pull-requests: read
 
@@ -15,5 +26,7 @@ jobs:
     with:
       service-name: whatsapp-business
       build-command: bun run build
-      dry-run: false
+      use-oidc: true
+      release: ${{ github.event_name == 'workflow_dispatch' && inputs.release || false }}
+      dry-run: ${{ github.event_name == 'workflow_dispatch' && inputs['dry-run'] || false }}
     secrets: inherit
