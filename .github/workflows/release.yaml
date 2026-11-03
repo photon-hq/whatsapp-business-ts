@@ -5,28 +5,53 @@ on:
     branches: [main]
   workflow_dispatch:
     inputs:
-      release:
-        type: boolean
-        description: "Force release (skip the PR-label check)"
-        default: false
-      dry-run:
-        type: boolean
-        description: "Run without publishing"
-        default: false
+      operation:
+        description: Verify and pack only, publish staging, or promote a stored candidate
+        type: choice
+        options: [dry-run, stage, promote]
+        default: dry-run
+      staging-version:
+        description: Staging version to promote; blank uses the current staging tag
+        type: string
+        default: ""
 
 permissions:
-  contents: write
-  id-token: write
-  packages: write
-  pull-requests: read
+  contents: read
 
 jobs:
-  release:
-    uses: photon-hq/buildspace/.github/workflows/typescript-service-release.yaml@main
+  stage:
+    if: github.event_name == 'push' || inputs.operation == 'dry-run' || inputs.operation == 'stage'
+    uses: photon-hq/buildspace/.github/workflows/package-stage.yml@c1fb06e4ae457a8e053642a914bd37b8f5ce9e1b
+    permissions:
+      contents: write
+      pull-requests: read
+      id-token: write
+      packages: write
+      actions: read
+      attestations: write
     with:
-      service-name: whatsapp-business
-      build-command: bun run build
-      use-oidc: true
-      release: ${{ github.event_name == 'workflow_dispatch' && inputs.release || false }}
-      dry-run: ${{ github.event_name == 'workflow_dispatch' && inputs['dry-run'] || false }}
-    secrets: inherit
+      package: "@photon-ai/whatsapp-business"
+      registry: https://registry.npmjs.org
+      environment: staging
+      setup-pnpm: false
+      bun-version: latest
+      install: bun install --frozen-lockfile
+      ci-workflow: ci.yaml
+      verify: bun run prepublishOnly
+      pack: node scripts/pack.mjs
+      dry-run: ${{ github.event_name == 'workflow_dispatch' && inputs.operation == 'dry-run' }}
+
+  promote:
+    if: github.event_name == 'workflow_dispatch' && inputs.operation == 'promote' && github.ref == 'refs/heads/main'
+    uses: photon-hq/buildspace/.github/workflows/package-promote.yml@c1fb06e4ae457a8e053642a914bd37b8f5ce9e1b
+    permissions:
+      contents: write
+      packages: write
+      actions: read
+      attestations: read
+      id-token: write
+    with:
+      package: "@photon-ai/whatsapp-business"
+      registry: https://registry.npmjs.org
+      environment: production
+      staging-version: ${{ inputs.staging-version }}
