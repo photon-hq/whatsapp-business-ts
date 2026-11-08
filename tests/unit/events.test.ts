@@ -611,9 +611,12 @@ describe("EventsResource.subscribe cancels the calls it drops", () => {
         true
       );
     } finally {
-      backend.stop();
-      await stream.close();
-      await pending;
+      try {
+        await stream.close();
+        await pending;
+      } finally {
+        backend.stop();
+      }
     }
   });
 
