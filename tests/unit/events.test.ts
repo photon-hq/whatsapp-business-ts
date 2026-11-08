@@ -1,5 +1,15 @@
 import { describe, expect, it } from "bun:test";
-import type { SubscribeEventsResponse } from "../../src/generated/photon/whatsapp/v1/message_service.ts";
+import {
+  createChannel,
+  createClient,
+  createServer,
+  ServerError,
+  Status,
+} from "nice-grpc";
+import {
+  MessageServiceDefinition,
+  type SubscribeEventsResponse,
+} from "../../src/generated/photon/whatsapp/v1/message_service.ts";
 import { EventsResource } from "../../src/resources/events.ts";
 import type { MessageServiceClient } from "../../src/transport/grpc-client.ts";
 
@@ -516,5 +526,113 @@ describe("EventsResource.subscribe cancels the reconnect loop", () => {
     await delay(POST_CLOSE_WINDOW_MS);
     expect(reconnects).toBe(reconnectsAtAbort);
     expect(calls()).toBe(callsAtAbort);
+  });
+});
+
+// Timings for the server tests: a silent call trips the stall timer quickly,
+// and each wait gives up well inside bun's 5s test timeout.
+
+/** Stall timeout for a call the server never answers. */
+const SILENT_STALL_TIMEOUT_MS = 100;
+/** Longest a test waits for the server to see a call open or cancel. */
+const SERVER_WAIT_MS = 2000;
+/** Poll interval while waiting on the server. */
+const POLL_MS = 5;
+
+/** Poll `condition` until it holds; false once `SERVER_WAIT_MS` has passed. */
+const waitFor = async (condition: () => boolean): Promise<boolean> => {
+  const deadline = Date.now() + SERVER_WAIT_MS;
+  while (!condition()) {
+    if (Date.now() > deadline) {
+      return false;
+    }
+    await delay(POLL_MS);
+  }
+  return true;
+};
+
+/**
+ * A real nice-grpc server whose subscribeEvents never sends a frame, reached
+ * through a real nice-grpc client. The server keeps each call's signal, which
+ * aborts only when the cancellation reaches the server — what the fake
+ * clients above cannot show.
+ */
+async function silentServer(): Promise<{
+  calls: AbortSignal[];
+  client: MessageServiceClient;
+  stop: () => void;
+}> {
+  const calls: AbortSignal[] = [];
+  const unimplemented = (): never => {
+    throw new ServerError(Status.UNIMPLEMENTED, "not used by these tests");
+  };
+  const server = createServer();
+  server.add(MessageServiceDefinition, {
+    sendMessage: unimplemented,
+    markRead: unimplemented,
+    fetchMissedEvents: unimplemented,
+    async *subscribeEvents(_request, context) {
+      calls.push(context.signal);
+      await new Promise<void>((resolve) => {
+        context.signal.addEventListener("abort", () => resolve(), {
+          once: true,
+        });
+      });
+    },
+  });
+  const port = await server.listen("127.0.0.1:0");
+  const channel = createChannel(`127.0.0.1:${port}`);
+  return {
+    calls,
+    client: createClient(MessageServiceDefinition, channel),
+    stop: () => {
+      channel.close();
+      server.forceShutdown();
+    },
+  };
+}
+
+describe("EventsResource.subscribe cancels the calls it drops", () => {
+  // The server kept every stream the SDK dropped until the client process
+  // exited: return() on the call's iterator only queues behind the pending
+  // next(), and a silent call never settles it, so the call was never
+  // cancelled. Both tests fail without the call's own signal.
+  it("cancels a stalled call on the server when it reconnects", async () => {
+    const backend = await silentServer();
+    const stream = new EventsResource(backend.client).subscribe({
+      reconnect: { initialDelay: RETRY_DELAY_MS, maxDelay: RETRY_DELAY_MS },
+      stallTimeoutMs: SILENT_STALL_TIMEOUT_MS,
+    });
+    const pending = stream[Symbol.asyncIterator]().next();
+
+    try {
+      expect(await waitFor(() => backend.calls.length >= 2)).toBe(true);
+      expect(await waitFor(() => backend.calls[0]?.aborted === true)).toBe(
+        true
+      );
+    } finally {
+      backend.stop();
+      await stream.close();
+      await pending;
+    }
+  });
+
+  it("cancels the live call on the server when the stream is closed", async () => {
+    const backend = await silentServer();
+    const stream = new EventsResource(backend.client).subscribe({
+      stallTimeoutMs: 0,
+    });
+    const pending = stream[Symbol.asyncIterator]().next();
+
+    try {
+      expect(await waitFor(() => backend.calls.length === 1)).toBe(true);
+      await stream.close();
+      expect(await waitFor(() => backend.calls[0]?.aborted === true)).toBe(
+        true
+      );
+      expect((await pending).done).toBe(true);
+    } finally {
+      backend.stop();
+    }
   });
 });
