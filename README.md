@@ -91,4 +91,4 @@ The first staging run can create `staging` automatically. Before the first produ
 
 ## License
 
-MIT
+Apache-2.0
