@@ -250,9 +250,19 @@ export interface InteractiveAction {
   productRetailerId?:
     | string
     | undefined;
+  /** For flow and cta_url types: Meta's action name, "flow" or "cta_url". */
+  name?:
+    | string
+    | undefined;
   /** For flow type. */
-  name?: string | undefined;
-  parameters?: InteractiveFlowParameters | undefined;
+  parameters?:
+    | InteractiveFlowParameters
+    | undefined;
+  /**
+   * For cta_url type. A separate field because `parameters` is typed to Flow:
+   * changing its type would break every client that already sends a Flow.
+   */
+  ctaUrlParameters?: InteractiveCtaUrlParameters | undefined;
 }
 
 export interface InteractiveButton {
@@ -289,6 +299,15 @@ export interface InteractiveFlowParameters {
   flowCta: string;
   flowAction?: string | undefined;
   flowActionPayloadJson?: string | undefined;
+}
+
+/**
+ * The one URL button of a cta_url message. Meta limits display_text to 20
+ * characters; both values are passed to Meta unchanged.
+ */
+export interface InteractiveCtaUrlParameters {
+  displayText: string;
+  url: string;
 }
 
 /** Template message. */
@@ -3000,6 +3019,7 @@ function createBaseInteractiveAction(): InteractiveAction {
     productRetailerId: undefined,
     name: undefined,
     parameters: undefined,
+    ctaUrlParameters: undefined,
   };
 }
 
@@ -3025,6 +3045,9 @@ export const InteractiveAction: MessageFns<InteractiveAction> = {
     }
     if (message.parameters !== undefined) {
       InteractiveFlowParameters.encode(message.parameters, writer.uint32(58).fork()).join();
+    }
+    if (message.ctaUrlParameters !== undefined) {
+      InteractiveCtaUrlParameters.encode(message.ctaUrlParameters, writer.uint32(66).fork()).join();
     }
     return writer;
   },
@@ -3092,6 +3115,14 @@ export const InteractiveAction: MessageFns<InteractiveAction> = {
           message.parameters = InteractiveFlowParameters.decode(reader, reader.uint32());
           continue;
         }
+        case 8: {
+          if (tag !== 66) {
+            break;
+          }
+
+          message.ctaUrlParameters = InteractiveCtaUrlParameters.decode(reader, reader.uint32());
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -3122,6 +3153,11 @@ export const InteractiveAction: MessageFns<InteractiveAction> = {
         : undefined,
       name: isSet(object.name) ? globalThis.String(object.name) : undefined,
       parameters: isSet(object.parameters) ? InteractiveFlowParameters.fromJSON(object.parameters) : undefined,
+      ctaUrlParameters: isSet(object.ctaUrlParameters)
+        ? InteractiveCtaUrlParameters.fromJSON(object.ctaUrlParameters)
+        : isSet(object.cta_url_parameters)
+        ? InteractiveCtaUrlParameters.fromJSON(object.cta_url_parameters)
+        : undefined,
     };
   },
 
@@ -3148,6 +3184,9 @@ export const InteractiveAction: MessageFns<InteractiveAction> = {
     if (message.parameters !== undefined) {
       obj.parameters = InteractiveFlowParameters.toJSON(message.parameters);
     }
+    if (message.ctaUrlParameters !== undefined) {
+      obj.ctaUrlParameters = InteractiveCtaUrlParameters.toJSON(message.ctaUrlParameters);
+    }
     return obj;
   },
 
@@ -3164,6 +3203,9 @@ export const InteractiveAction: MessageFns<InteractiveAction> = {
     message.name = object.name ?? undefined;
     message.parameters = (object.parameters !== undefined && object.parameters !== null)
       ? InteractiveFlowParameters.fromPartial(object.parameters)
+      : undefined;
+    message.ctaUrlParameters = (object.ctaUrlParameters !== undefined && object.ctaUrlParameters !== null)
+      ? InteractiveCtaUrlParameters.fromPartial(object.ctaUrlParameters)
       : undefined;
     return message;
   },
@@ -3744,6 +3786,86 @@ export const InteractiveFlowParameters: MessageFns<InteractiveFlowParameters> = 
     message.flowCta = object.flowCta ?? "";
     message.flowAction = object.flowAction ?? undefined;
     message.flowActionPayloadJson = object.flowActionPayloadJson ?? undefined;
+    return message;
+  },
+};
+
+function createBaseInteractiveCtaUrlParameters(): InteractiveCtaUrlParameters {
+  return { displayText: "", url: "" };
+}
+
+export const InteractiveCtaUrlParameters: MessageFns<InteractiveCtaUrlParameters> = {
+  encode(message: InteractiveCtaUrlParameters, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.displayText !== "") {
+      writer.uint32(10).string(message.displayText);
+    }
+    if (message.url !== "") {
+      writer.uint32(18).string(message.url);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): InteractiveCtaUrlParameters {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseInteractiveCtaUrlParameters();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.displayText = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.url = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): InteractiveCtaUrlParameters {
+    return {
+      displayText: isSet(object.displayText)
+        ? globalThis.String(object.displayText)
+        : isSet(object.display_text)
+        ? globalThis.String(object.display_text)
+        : "",
+      url: isSet(object.url) ? globalThis.String(object.url) : "",
+    };
+  },
+
+  toJSON(message: InteractiveCtaUrlParameters): unknown {
+    const obj: any = {};
+    if (message.displayText !== "") {
+      obj.displayText = message.displayText;
+    }
+    if (message.url !== "") {
+      obj.url = message.url;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<InteractiveCtaUrlParameters>): InteractiveCtaUrlParameters {
+    return InteractiveCtaUrlParameters.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<InteractiveCtaUrlParameters>): InteractiveCtaUrlParameters {
+    const message = createBaseInteractiveCtaUrlParameters();
+    message.displayText = object.displayText ?? "";
+    message.url = object.url ?? "";
     return message;
   },
 };

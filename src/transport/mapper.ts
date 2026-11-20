@@ -12,6 +12,7 @@ import type {
   InteractiveAction as ProtoInteractiveAction,
   InteractiveButton as ProtoInteractiveButton,
   InteractiveContent as ProtoInteractiveContent,
+  InteractiveCtaUrlParameters as ProtoInteractiveCtaUrlParameters,
   InteractiveFlowParameters as ProtoInteractiveFlowParameters,
   InteractiveHeader as ProtoInteractiveHeader,
   InteractiveSection as ProtoInteractiveSection,
@@ -42,6 +43,7 @@ import type {
   ContactCardInput,
   InteractiveActionInput,
   InteractiveButtonInput,
+  InteractiveCtaUrlParametersInput,
   InteractiveFlowParametersInput,
   InteractiveHeaderInput,
   InteractiveInput,
@@ -186,6 +188,7 @@ function mapInteractiveHeaderInput(
 function mapInteractiveActionInput(
   input: InteractiveActionInput
 ): ProtoInteractiveAction {
+  const { parameters } = input;
   return {
     buttons: input.buttons?.map(mapInteractiveButtonInput) ?? [],
     button: input.button,
@@ -193,10 +196,29 @@ function mapInteractiveActionInput(
     catalogId: input.catalogId,
     productRetailerId: input.productRetailerId,
     name: input.name,
-    parameters: input.parameters
-      ? mapFlowParametersInput(input.parameters)
-      : undefined,
+    // One `parameters` on the SDK side, two fields on the wire: the proto's
+    // `parameters` is typed to Flow, so a URL button travels in its own field.
+    parameters:
+      parameters && !isCtaUrlParameters(parameters)
+        ? mapFlowParametersInput(parameters)
+        : undefined,
+    ctaUrlParameters:
+      parameters && isCtaUrlParameters(parameters)
+        ? mapCtaUrlParametersInput(parameters)
+        : undefined,
   };
+}
+
+function isCtaUrlParameters(
+  parameters: InteractiveFlowParametersInput | InteractiveCtaUrlParametersInput
+): parameters is InteractiveCtaUrlParametersInput {
+  return "displayText" in parameters;
+}
+
+function mapCtaUrlParametersInput(
+  input: InteractiveCtaUrlParametersInput
+): ProtoInteractiveCtaUrlParameters {
+  return { displayText: input.displayText, url: input.url };
 }
 
 function mapInteractiveButtonInput(

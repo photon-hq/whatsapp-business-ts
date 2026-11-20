@@ -2,6 +2,7 @@ import { describe, expect, it } from "bun:test";
 import {
   button,
   buttons,
+  ctaUrl,
   flow,
   list,
   product,
@@ -89,5 +90,25 @@ describe("flow builder", () => {
     expect(msg.type).toBe("flow");
     expect(msg.body).toBe("Complete the form");
     expect(msg.action?.parameters?.flowId).toBe("flow123");
+  });
+});
+
+describe("ctaUrl builder", () => {
+  it("creates a cta_url message with one URL button", () => {
+    const msg = ctaUrl({
+      body: "Connect your account to continue.",
+      footer: "Takes under a minute.",
+      parameters: { displayText: "Connect account", url: "https://x.co" },
+    });
+    expect(msg).toEqual({
+      type: "cta_url",
+      body: "Connect your account to continue.",
+      footer: "Takes under a minute.",
+      header: undefined,
+      action: {
+        name: "cta_url",
+        parameters: { displayText: "Connect account", url: "https://x.co" },
+      },
+    });
   });
 });

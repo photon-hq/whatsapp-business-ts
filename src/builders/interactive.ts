@@ -1,4 +1,5 @@
 import type {
+  InteractiveCtaUrlParametersInput,
   InteractiveFlowParametersInput,
   InteractiveHeaderInput,
   InteractiveInput,
@@ -192,6 +193,31 @@ export function flow(options: FlowOptions): InteractiveInput {
     footer: options.footer,
     action: {
       name: "flow",
+      parameters: options.parameters,
+    },
+  };
+}
+
+// ---------------------------------------------------------------------------
+// CTA URL helper
+// ---------------------------------------------------------------------------
+
+export interface CtaUrlOptions {
+  readonly body: string;
+  readonly footer?: string;
+  readonly header?: InteractiveHeaderInput;
+  readonly parameters: InteractiveCtaUrlParametersInput;
+}
+
+/** A message with one button that opens `parameters.url`. */
+export function ctaUrl(options: CtaUrlOptions): InteractiveInput {
+  return {
+    type: "cta_url",
+    body: options.body,
+    header: options.header,
+    footer: options.footer,
+    action: {
+      name: "cta_url",
       parameters: options.parameters,
     },
   };

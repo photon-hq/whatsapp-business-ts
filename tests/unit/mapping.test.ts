@@ -139,6 +139,47 @@ describe("mapSendParams", () => {
     });
     expect(result.interactive?.type).toBe("button");
   });
+
+  it("maps cta_url parameters to ctaUrlParameters", () => {
+    const result = mapSendParams({
+      to: "+1",
+      interactive: {
+        type: "cta_url",
+        body: "Connect your account to continue.",
+        action: {
+          name: "cta_url",
+          parameters: { displayText: "Connect account", url: "https://x.co" },
+        },
+      },
+    });
+    expect(result.interactive?.action?.name).toBe("cta_url");
+    expect(result.interactive?.action?.ctaUrlParameters).toEqual({
+      displayText: "Connect account",
+      url: "https://x.co",
+    });
+    expect(result.interactive?.action?.parameters).toBeUndefined();
+  });
+
+  it("keeps flow parameters in parameters", () => {
+    const result = mapSendParams({
+      to: "+1",
+      interactive: {
+        type: "flow",
+        body: "Complete the form",
+        action: {
+          name: "flow",
+          parameters: {
+            flowMessageVersion: "3",
+            flowToken: "token123",
+            flowId: "flow123",
+            flowCta: "Open Form",
+          },
+        },
+      },
+    });
+    expect(result.interactive?.action?.parameters?.flowId).toBe("flow123");
+    expect(result.interactive?.action?.ctaUrlParameters).toBeUndefined();
+  });
 });
 
 describe("mapInboundMessage", () => {

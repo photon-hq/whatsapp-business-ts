@@ -1,9 +1,14 @@
-export type { Button, FlowOptions } from "./builders/interactive.ts";
+export type {
+  Button,
+  CtaUrlOptions,
+  FlowOptions,
+} from "./builders/interactive.ts";
 // Builders — interactive
 // biome-ignore lint/performance/noBarrelFile: intentional public API surface
 export {
   button,
   buttons,
+  ctaUrl,
   flow,
   list,
   product,

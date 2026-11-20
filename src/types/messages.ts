@@ -48,7 +48,10 @@ export interface InteractiveActionInput {
   readonly buttons?: readonly InteractiveButtonInput[];
   readonly catalogId?: string;
   readonly name?: string;
-  readonly parameters?: InteractiveFlowParametersInput;
+  /** Flow parameters when `name` is `"flow"`; the URL button when it is `"cta_url"`. */
+  readonly parameters?:
+    | InteractiveFlowParametersInput
+    | InteractiveCtaUrlParametersInput;
   readonly productRetailerId?: string;
   readonly sections?: readonly InteractiveSectionInput[];
 }
@@ -77,6 +80,14 @@ export interface InteractiveFlowParametersInput {
   readonly flowId: string;
   readonly flowMessageVersion: string;
   readonly flowToken: string;
+}
+
+/** The one URL button of a `cta_url` message. */
+export interface InteractiveCtaUrlParametersInput {
+  /** Button label. Meta allows at most 20 characters. */
+  readonly displayText: string;
+  /** Opened when the recipient taps the button. */
+  readonly url: string;
 }
 
 // ---------------------------------------------------------------------------
