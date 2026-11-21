@@ -43,18 +43,23 @@ export interface InteractiveHeaderInput {
   readonly video?: MediaInput;
 }
 
-export interface InteractiveActionInput {
+export type InteractiveActionInput = {
   readonly button?: string;
   readonly buttons?: readonly InteractiveButtonInput[];
   readonly catalogId?: string;
-  readonly name?: string;
-  /** Flow parameters when `name` is `"flow"`; the URL button when it is `"cta_url"`. */
-  readonly parameters?:
-    | InteractiveFlowParametersInput
-    | InteractiveCtaUrlParametersInput;
   readonly productRetailerId?: string;
   readonly sections?: readonly InteractiveSectionInput[];
-}
+} & (
+  | {
+      readonly name: "flow";
+      readonly parameters?: InteractiveFlowParametersInput;
+    }
+  | {
+      readonly name: "cta_url";
+      readonly parameters: InteractiveCtaUrlParametersInput;
+    }
+  | { readonly name?: string; readonly parameters?: never }
+);
 
 export interface InteractiveButtonInput {
   readonly reply: { readonly id: string; readonly title: string };

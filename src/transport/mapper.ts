@@ -188,7 +188,6 @@ function mapInteractiveHeaderInput(
 function mapInteractiveActionInput(
   input: InteractiveActionInput
 ): ProtoInteractiveAction {
-  const { parameters } = input;
   return {
     buttons: input.buttons?.map(mapInteractiveButtonInput) ?? [],
     button: input.button,
@@ -196,26 +195,15 @@ function mapInteractiveActionInput(
     catalogId: input.catalogId,
     productRetailerId: input.productRetailerId,
     name: input.name,
-    // One `parameters` on the SDK side, two fields on the wire: the proto's
-    // `parameters` is typed to Flow, so a URL button travels in its own field.
     parameters:
-      parameters && !isCtaUrlParameters(input.name, parameters)
-        ? mapFlowParametersInput(parameters)
+      input.name === "flow" && input.parameters
+        ? mapFlowParametersInput(input.parameters)
         : undefined,
     ctaUrlParameters:
-      parameters && isCtaUrlParameters(input.name, parameters)
-        ? mapCtaUrlParametersInput(parameters)
+      input.name === "cta_url" && input.parameters
+        ? mapCtaUrlParametersInput(input.parameters)
         : undefined,
   };
-}
-
-// A "flow" action keeps its Flow parameters even if they also carry
-// `displayText`; for any other action, `displayText` marks the URL button.
-function isCtaUrlParameters(
-  name: string | undefined,
-  parameters: InteractiveFlowParametersInput | InteractiveCtaUrlParametersInput
-): parameters is InteractiveCtaUrlParametersInput {
-  return name !== "flow" && "displayText" in parameters;
 }
 
 function mapCtaUrlParametersInput(
