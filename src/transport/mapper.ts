@@ -202,7 +202,10 @@ function mapInteractiveActionInput(
         ? mapFlowParametersInput(input.parameters)
         : undefined,
     ctaUrlParameters:
-      input.name === "cta_url" && input.parameters && "url" in input.parameters
+      input.name === "cta_url" &&
+      input.parameters &&
+      "displayText" in input.parameters &&
+      "url" in input.parameters
         ? mapCtaUrlParametersInput(input.parameters)
         : undefined,
   };

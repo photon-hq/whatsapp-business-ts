@@ -244,6 +244,26 @@ describe("mapSendParams", () => {
     expect(result.interactive?.action?.parameters).toBeUndefined();
     expect(result.interactive?.action?.ctaUrlParameters).toBeUndefined();
   });
+
+  it("sends no parameters when a cta_url action has flow parameters plus url", () => {
+    const parameters = {
+      flowMessageVersion: "3",
+      flowToken: "token123",
+      flowId: "flow123",
+      flowCta: "Open Form",
+      url: "https://x.co",
+    };
+    const result = mapSendParams({
+      to: "+1",
+      interactive: {
+        type: "cta_url",
+        body: "Connect your account to continue.",
+        action: { name: "cta_url", parameters },
+      },
+    });
+    expect(result.interactive?.action?.parameters).toBeUndefined();
+    expect(result.interactive?.action?.ctaUrlParameters).toBeUndefined();
+  });
 });
 
 describe("mapInboundMessage", () => {
