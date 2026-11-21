@@ -12,6 +12,7 @@ import type {
   InteractiveAction as ProtoInteractiveAction,
   InteractiveButton as ProtoInteractiveButton,
   InteractiveContent as ProtoInteractiveContent,
+  InteractiveCtaUrlParameters as ProtoInteractiveCtaUrlParameters,
   InteractiveFlowParameters as ProtoInteractiveFlowParameters,
   InteractiveHeader as ProtoInteractiveHeader,
   InteractiveSection as ProtoInteractiveSection,
@@ -42,6 +43,7 @@ import type {
   ContactCardInput,
   InteractiveActionInput,
   InteractiveButtonInput,
+  InteractiveCtaUrlParametersInput,
   InteractiveFlowParametersInput,
   InteractiveHeaderInput,
   InteractiveInput,
@@ -193,10 +195,21 @@ function mapInteractiveActionInput(
     catalogId: input.catalogId,
     productRetailerId: input.productRetailerId,
     name: input.name,
-    parameters: input.parameters
-      ? mapFlowParametersInput(input.parameters)
-      : undefined,
+    parameters:
+      input.name === "flow" && input.parameters
+        ? mapFlowParametersInput(input.parameters)
+        : undefined,
+    ctaUrlParameters:
+      input.name === "cta_url" && input.parameters
+        ? mapCtaUrlParametersInput(input.parameters)
+        : undefined,
   };
+}
+
+function mapCtaUrlParametersInput(
+  input: InteractiveCtaUrlParametersInput
+): ProtoInteractiveCtaUrlParameters {
+  return { displayText: input.displayText, url: input.url };
 }
 
 function mapInteractiveButtonInput(
