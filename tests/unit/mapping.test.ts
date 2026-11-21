@@ -202,6 +202,48 @@ describe("mapSendParams", () => {
     expect(result.interactive?.action?.parameters?.flowId).toBe("flow123");
     expect(result.interactive?.action?.ctaUrlParameters).toBeUndefined();
   });
+
+  it("keeps flow parameters under any name other than cta_url, as 0.3.2 did", () => {
+    const result = mapSendParams({
+      to: "+1",
+      interactive: {
+        type: "flow",
+        body: "Complete the form",
+        action: {
+          name: "custom",
+          parameters: {
+            flowMessageVersion: "3",
+            flowToken: "token123",
+            flowId: "flow123",
+            flowCta: "Open Form",
+          },
+        },
+      },
+    });
+    expect(result.interactive?.action?.parameters?.flowId).toBe("flow123");
+    expect(result.interactive?.action?.ctaUrlParameters).toBeUndefined();
+  });
+
+  it("sends no parameters when a cta_url action carries flow parameters", () => {
+    const result = mapSendParams({
+      to: "+1",
+      interactive: {
+        type: "cta_url",
+        body: "Connect your account to continue.",
+        action: {
+          name: "cta_url",
+          parameters: {
+            flowMessageVersion: "3",
+            flowToken: "token123",
+            flowId: "flow123",
+            flowCta: "Open Form",
+          },
+        },
+      },
+    });
+    expect(result.interactive?.action?.parameters).toBeUndefined();
+    expect(result.interactive?.action?.ctaUrlParameters).toBeUndefined();
+  });
 });
 
 describe("mapInboundMessage", () => {
