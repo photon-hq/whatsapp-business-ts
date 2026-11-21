@@ -180,6 +180,28 @@ describe("mapSendParams", () => {
     expect(result.interactive?.action?.parameters?.flowId).toBe("flow123");
     expect(result.interactive?.action?.ctaUrlParameters).toBeUndefined();
   });
+
+  it("keeps flow parameters when a flow action also has displayText", () => {
+    const result = mapSendParams({
+      to: "+1",
+      interactive: {
+        type: "flow",
+        body: "Complete the form",
+        action: {
+          name: "flow",
+          parameters: {
+            flowMessageVersion: "3",
+            flowToken: "token123",
+            flowId: "flow123",
+            flowCta: "Open Form",
+            displayText: "Open",
+          },
+        },
+      },
+    });
+    expect(result.interactive?.action?.parameters?.flowId).toBe("flow123");
+    expect(result.interactive?.action?.ctaUrlParameters).toBeUndefined();
+  });
 });
 
 describe("mapInboundMessage", () => {

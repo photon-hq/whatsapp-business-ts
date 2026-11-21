@@ -199,20 +199,23 @@ function mapInteractiveActionInput(
     // One `parameters` on the SDK side, two fields on the wire: the proto's
     // `parameters` is typed to Flow, so a URL button travels in its own field.
     parameters:
-      parameters && !isCtaUrlParameters(parameters)
+      parameters && !isCtaUrlParameters(input.name, parameters)
         ? mapFlowParametersInput(parameters)
         : undefined,
     ctaUrlParameters:
-      parameters && isCtaUrlParameters(parameters)
+      parameters && isCtaUrlParameters(input.name, parameters)
         ? mapCtaUrlParametersInput(parameters)
         : undefined,
   };
 }
 
+// A "flow" action keeps its Flow parameters even if they also carry
+// `displayText`; for any other action, `displayText` marks the URL button.
 function isCtaUrlParameters(
+  name: string | undefined,
   parameters: InteractiveFlowParametersInput | InteractiveCtaUrlParametersInput
 ): parameters is InteractiveCtaUrlParametersInput {
-  return "displayText" in parameters;
+  return name !== "flow" && "displayText" in parameters;
 }
 
 function mapCtaUrlParametersInput(
