@@ -196,11 +196,16 @@ function mapInteractiveActionInput(
     productRetailerId: input.productRetailerId,
     name: input.name,
     parameters:
-      input.name === "flow" && input.parameters
+      input.name !== "cta_url" &&
+      input.parameters &&
+      "flowId" in input.parameters
         ? mapFlowParametersInput(input.parameters)
         : undefined,
     ctaUrlParameters:
-      input.name === "cta_url" && input.parameters
+      input.name === "cta_url" &&
+      input.parameters &&
+      "displayText" in input.parameters &&
+      "url" in input.parameters
         ? mapCtaUrlParametersInput(input.parameters)
         : undefined,
   };

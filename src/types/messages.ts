@@ -51,14 +51,13 @@ export type InteractiveActionInput = {
   readonly sections?: readonly InteractiveSectionInput[];
 } & (
   | {
-      readonly name: "flow";
-      readonly parameters?: InteractiveFlowParametersInput;
-    }
-  | {
       readonly name: "cta_url";
       readonly parameters: InteractiveCtaUrlParametersInput;
     }
-  | { readonly name?: string; readonly parameters?: never }
+  | {
+      readonly name?: string;
+      readonly parameters?: InteractiveFlowParametersInput;
+    }
 );
 
 export interface InteractiveButtonInput {
