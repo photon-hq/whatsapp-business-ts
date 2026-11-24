@@ -93,7 +93,8 @@ export class EventsResource {
     const stream = withResumableReconnect<WhatsAppEvent>(
       () =>
         this._mapStream(
-          this._client.subscribeEvents({}),
+          (signal) => this._client.subscribeEvents({}, { signal }),
+          controller.signal,
           (c) => {
             lastCursor = c;
           },
@@ -152,12 +153,21 @@ export class EventsResource {
   }
 
   private async *_mapStream(
-    rpcStream: AsyncIterable<SubscribeEventsResponse>,
+    openCall: (signal: AbortSignal) => AsyncIterable<SubscribeEventsResponse>,
+    closeSignal: AbortSignal,
     onCursor: (cursor: string) => void,
     onActivity?: () => void,
     stallTimeoutMs?: number
   ): AsyncGenerator<WhatsAppEvent> {
-    const iterator = rpcStream[Symbol.asyncIterator]();
+    // Each live call gets its own signal, aborted when this stream ends for
+    // any reason or the subscription is closed. Aborting is what cancels the
+    // call: return() on its iterator only queues behind a pending next(), and
+    // a stalled call never settles that next(), so the server kept every
+    // stream dropped that way until the client process exited.
+    const call = new AbortController();
+    const cancelCall = (): void => call.abort();
+    closeSignal.addEventListener("abort", cancelCall, { once: true });
+    const iterator = openCall(call.signal)[Symbol.asyncIterator]();
     try {
       for (;;) {
         // The stall timer spans only the wait for the SERVER's next frame —
@@ -186,9 +196,11 @@ export class EventsResource {
     } catch (err) {
       throw err instanceof WhatsAppError ? err : fromGrpcError(err);
     } finally {
-      // Cancel the underlying gRPC call. Fire-and-forget: on a half-open
-      // connection return() may only settle at transport timeout, and
-      // reconnection must not wait for a dead socket's teardown.
+      closeSignal.removeEventListener("abort", cancelCall);
+      call.abort();
+      // Let the call's iterator finish its own cleanup. Fire-and-forget: on a
+      // half-open connection return() may only settle at transport timeout,
+      // and reconnection must not wait for a dead socket's teardown.
       Promise.resolve(iterator.return?.(undefined)).catch(() => undefined);
     }
   }
